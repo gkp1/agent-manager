@@ -6,6 +6,46 @@ Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as Op
 
 AI Manager runs your AI agents in isolated Docker containers. Each agent gets its own sandboxed environment with **no access** to other containers or your host system — only the folders explicitly mounted in each agent's `docker-compose.yml`. Your data, your control.
 
+## 📁 Multi-Agent Folder Structure Example
+
+```
+~/aimanager/
+├── xnanobot.sh                          # Main script
+├── nanobot-instances/                   # All agents live here
+│   ├── wa1/                             # Agent 1: WhatsApp
+│   │   ├── config.json                  # wa1's LLM + channel config
+│   │   ├── docker-compose.yml           # wa1's isolated container
+│   │   ├── bridge/                      # wa1's WhatsApp bridge
+│   │   ├── workspace/                   # wa1's memory & files
+│   │   └── whatsapp-auth/               # wa1's WhatsApp session
+│   │
+│   ├── wa2/                             # Agent 2: WhatsApp (different number)
+│   │   ├── config.json                  # Can use DIFFERENT LLM provider!
+│   │   ├── docker-compose.yml
+│   │   ├── bridge/
+│   │   ├── workspace/
+│   │   └── whatsapp-auth/
+│   │
+│   ├── tg1/                             # Agent 3: Telegram
+│   │   ├── config.json                  # Telegram bot config
+│   │   ├── docker-compose.yml
+│   │   └── workspace/
+│   │
+│   └── discord1/                        # Agent 4: Discord
+│       ├── config.json
+│       ├── docker-compose.yml
+│       └── workspace/
+│
+├── nanobot-source/                      # Nanobot source code
+└── backups/                             # Instance backups
+```
+
+**Key Points:**
+- Each agent is fully isolated — `wa1` cannot access `wa2`'s data
+- Different agents can use different LLM providers/models
+- Global LLM settings can be applied to all agents, or each can have its own
+- WhatsApp, Telegram, Discord, Feishu, Slack, Matrix, Email — mix and match
+
 ### The Problem
 
 Setting up AI agents is painful. Multiple tools, conflicting dependencies, manual configuration for each instance. Want 2 agents? Double the headaches.
