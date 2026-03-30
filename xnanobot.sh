@@ -5,62 +5,32 @@
 
 set -euo pipefail
 
-# Script name (for dynamic display)
 SCRIPT_NAME="$(basename "$0")"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/lib" && pwd)"
 
-# ============================================================
-# PATCH CONFIGURATION
-# ============================================================
-PATCH_WHATSAPP_AUDIO=true  # true = apply WhatsApp audio patch on build
-
-# Diretório base do aimanager (deve vir primeiro)
-# Use readlink to resolve symlinks correctly
-SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
-AIMANAGER_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-
-# Default directories
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AIMANAGER_DIR="$SCRIPT_DIR"
 NANOBOT_HOME="${HOME}/.nanobot"
 NANOBOT_INSTANCES="${AIMANAGER_DIR}/nanobot-instances"
 NANOBOT_REPO="https://github.com/HKUDS/nanobot.git"
-NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"  # Fonte do nanobot
-BACKUP_DIR="${AIMANAGER_DIR}/backups"  # Backups de instances
+NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"
+BACKUP_DIR="${AIMANAGER_DIR}/backups"
+GLOBAL_CONFIG="${NANOBOT_HOME}/global-config.json"
 
-# Funções auxiliares (devem vir antes de check_os)
-print_header() {
-    echo -e "${PURPLE}════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}   🐈 Nanobot Helper Script${NC}"
-    echo -e "${PURPLE}════════════════════════════════════════════${NC}"
-    echo
-}
+export AIMANAGER_DIR NANOBOT_HOME NANOBOT_INSTANCES BACKUP_DIR GLOBAL_CONFIG
 
-print_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+source "${LIB_DIR}/colors.sh"
+source "${LIB_DIR}/config.sh"
+source "${LIB_DIR}/docker.sh"
+source "${LIB_DIR}/instance.sh"
+source "${LIB_DIR}/channel.sh"
+source "${LIB_DIR}/llm.sh"
+source "${LIB_DIR}/llm_commands.sh"
+source "${LIB_DIR}/menu_llm.sh"
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_step() {
-    echo -e "${CYAN}[STEP]${NC} $1"
-}
+detect_os
+init_config_dirs
 
 # Agent status cache
 AGENT_STATUS_CACHE=""
@@ -2011,6 +1981,10 @@ show_menu() {
     echo -e "    ${PURPLE}[21]${NC} Rebuild Image  ${CYAN}[22]${NC} Config Instance"
     echo -e "    ${CYAN}[23]${NC} Help"
     echo
+    echo -e "  ${YELLOW}🤖 AI LLM${NC}"
+    echo -e "    ${YELLOW}[25]${NC} Global LLM Settings"
+    echo -e "    ${YELLOW}[26]${NC} Instance LLM Settings"
+    echo
     echo -e "  ${RED}⚠️  Danger${NC}"
     echo -e "    ${RED}[24]${NC} Delete Instance (IRREVERSIBLE)"
     echo
@@ -2095,7 +2069,7 @@ interactive_menu() {
     
     while true; do
         show_menu
-        read -p "Choose an option [0-24]: " choice
+        read -p "Choose an option [0-26]: " choice
         
         case $choice in
             1)
@@ -2170,13 +2144,19 @@ interactive_menu() {
             24)
                 delete_instance
                 ;;
+            25)
+                menu_global_llm
+                ;;
+            26)
+                menu_instance_llm
+                ;;
             0)
                 echo
                 print_info "Exiting Nanobot Helper. Goodbye! 🐈"
                 exit 0
                 ;;
             *)
-                print_error "Invalid option. Choose a number from 0 to 24."
+                print_error "Invalid option. Choose a number from 0 to 26."
                 ;;
         esac
         
@@ -2235,6 +2215,22 @@ show_help() {
     echo "  configure        - Configure instance - select and edit"
     echo "  interactive      - Interactive mode"
     echo "  help             - Show help"
+    echo
+    echo "Global LLM Settings:"
+    echo "  global-set       - Set global provider + model + API key (interactive)"
+    echo "  global-provider  - Set global LLM provider"
+    echo "  global-model     - Set global LLM model"
+    echo "  global-key       - Set global API key for provider"
+    echo "  global-show      - Show global LLM config"
+    echo "  global-clear     - Clear global config"
+    echo
+    echo "Instance LLM Settings:"
+    echo "  instance-show <name>        - Show effective config for instance"
+    echo "  instance-model <name>       - Set model for instance (override global)"
+    echo "  instance-provider <name>    - Set provider for instance"
+    echo "  instance-key <name>        - Set API key for instance (override global)"
+    echo "  instance-key-clear <name>  - Clear instance API key (use global)"
+    echo "  instance-reset <name>      - Reset instance to use global config"
     echo
     echo "Supported LLM Providers:"
     echo "  - OpenRouter - default - Global access, any model"
@@ -2386,6 +2382,66 @@ main() {
             ;;
         configure)
             configure_instance_menu
+            ;;
+        global-set)
+            cmd_global_set
+            ;;
+        global-provider)
+            cmd_global_provider
+            ;;
+        global-model)
+            cmd_global_model
+            ;;
+        global-key)
+            cmd_global_key
+            ;;
+        global-show)
+            cmd_global_show
+            ;;
+        global-clear)
+            cmd_global_clear
+            ;;
+        instance-show)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_show "$2"
+            ;;
+        instance-model)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_model "$2"
+            ;;
+        instance-provider)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_provider "$2"
+            ;;
+        instance-key)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_key "$2"
+            ;;
+        instance-key-clear)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_key_clear "$2"
+            ;;
+        instance-reset)
+            if [[ -z "${2:-}" ]]; then
+                print_error "Specify the instance name"
+                exit 1
+            fi
+            cmd_instance_reset "$2"
             ;;
         interactive|"")
             interactive_menu
