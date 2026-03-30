@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  nanobot:
+    image: nanobot
+    container_name: nanobot-wa1
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/root/.nanobot/config.json
+      - ./bridge:/root/.nanobot/bridge
+      - ./workspace:/root/.nanobot/workspace
+    ports:
+      - "18791:18790"
+    command: ["gateway", "--config", "/root/.nanobot/config.json", "--port", "18791"]

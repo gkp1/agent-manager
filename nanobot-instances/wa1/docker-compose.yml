@@ -1,0 +1,17 @@
+services:
+  nanobot:
+    image: nanobot
+    container_name: nanobot-wa1
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/root/.nanobot/config.json
+      - ./bridge:/root/.nanobot/bridge
+      - ./workspace:/root/.nanobot/workspace
+      - ./whatsapp-auth:/root/.nanobot/whatsapp-auth
+    ports:
+      - "18791:18790"
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        cd /root/.nanobot/bridge && node dist/index.js &
+        exec nanobot gateway

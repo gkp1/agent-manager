@@ -3,8 +3,6 @@ nanobot-source/
 
 # User data directories (outside git)
 ../.nanobot/
-../nanobot-instances/
-../nanobot-backups/
 ../backups/
 
 # Environment & secrets
@@ -27,3 +25,10 @@ Thumbs.db
 
 # Docker volumes and containers
 docker-compose.override.yml
+
+# Instance data (too large, runtime generated)
+nanobot-instances/*/bridge/node_modules/
+nanobot-instances/*/bridge/dist/
+nanobot-instances/*/whatsapp-auth/
+nanobot-instances/*/workspace/sessions/
+nanobot-instances/*/workspace/media/

@@ -22,12 +22,17 @@ NC='\033[0m' # No Color
 # ============================================================
 PATCH_WHATSAPP_AUDIO=true  # true = aplicar patch de áudio WhatsApp no build
 
+# Diretório base do aimanager (deve vir primeiro)
+# Usar readlink para resolver symlinks corretamente
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+AIMANAGER_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+
 # Diretórios padrão
 NANOBOT_HOME="${HOME}/.nanobot"
-NANOBOT_INSTANCES="${HOME}/nanobot-instances"
+NANOBOT_INSTANCES="${AIMANAGER_DIR}/nanobot-instances"
 NANOBOT_REPO="https://github.com/HKUDS/nanobot.git"
-AIMANAGER_DIR="$(cd "$(dirname "$0")/.." && pwd)"  # Raiz do aimanager
 NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"  # Fonte do nanobot
+BACKUP_DIR="${AIMANAGER_DIR}/backups"  # Backups de instâncias
 
 # Funções auxiliares (devem vir antes de check_os)
 print_header() {
@@ -1208,7 +1213,7 @@ print(c.get('agents',{}).get('defaults',{}).get('model','?'))
     # Offer backup
     read -p "Fazer backup do config.json? (s/n) [s]: " do_backup
     if [[ "${do_backup:-s}" == "s" || "${do_backup:-s}" == "S" ]]; then
-        local backup_dir="${HOME}/nanobot-backups"
+        local backup_dir="${BACKUP_DIR}"
         local backup_name="${instance_name}_$(date +%Y%m%d_%H%M%S)"
         mkdir -p "$backup_dir/$backup_name"
         cp "$instance_dir/config.json" "$backup_dir/$backup_name/"
