@@ -185,15 +185,15 @@ with open('$config_file', 'w') as f:
                 echo "Enter numbers separated by comma:"
                 read -p "Numbers: " numbers
                 if [[ -n "$numbers" ]]; then
-                    python3 << PYEOF
+                    python3 -c "
 import json
-nums = [n.strip() for n in "$numbers".split(",") if n.strip()]
-with open("$config_file", "r") as f:
+nums = [n.strip() for n in '$numbers'.split(',') if n.strip()]
+with open('$config_file', 'r') as f:
     cfg = json.load(f)
-cfg.setdefault("channels", {}).setdefault("whatsapp", {})["allowFrom"] = nums
-with open("$config_file", "w") as f:
+cfg.setdefault('channels', {}).setdefault('whatsapp', {})['allowFrom'] = nums
+with open('$config_file', 'w') as f:
     json.dump(cfg, f, indent=2)
-PYEOF
+"
                     print_success "allowFrom atualizado"
                 fi
                 ;;

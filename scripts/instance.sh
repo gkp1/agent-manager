@@ -485,28 +485,28 @@ print(c.get('channels',{}).get('$channel',{}).get('groupPolicy','mention'))
         read -p "Choose [0-5]: " cfg_choice
         case ${cfg_choice:-0} in
             1)
-                python3 << PYEOF
+                python3 -c "
 import json
-with open("$cfg", "r") as f:
+with open('$cfg', 'r') as f:
     c = json.load(f)
-c["channels"]["$channel"]["allowFrom"] = ["*"]
-with open("$cfg", "w") as f:
+c['channels']['$channel']['allowFrom'] = ['*']
+with open('$cfg', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
                 print_success "allowFrom = [\"*\"]"
                 ;;
             2)
                 read -p "IDs/numbers (separated by comma): " ids
                 if [[ -n "$ids" ]]; then
-                    python3 << PYEOF
+                    python3 -c "
 import json
-with open("$cfg", "r") as f:
+with open('$cfg', 'r') as f:
     c = json.load(f)
-nums = [n.strip() for n in "$ids".split(",") if n.strip()]
-c["channels"]["$channel"]["allowFrom"] = nums
-with open("$cfg", "w") as f:
+nums = [n.strip() for n in '$ids'.split(',') if n.strip()]
+c['channels']['$channel']['allowFrom'] = nums
+with open('$cfg', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
                     print_success "allowFrom updated"
                 fi
                 ;;

@@ -119,47 +119,47 @@ print(c.get('providers', {}).get('$provider', {}).get('apiKey', ''))
 set_global_provider() {
     local provider="$1"
     init_global_config
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('$GLOBAL_CONFIG', 'r') as f:
     c = json.load(f)
 c.setdefault('global', {})['provider'] = '$provider'
 with open('$GLOBAL_CONFIG', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 set_global_model() {
     local model="$1"
     init_global_config
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('$GLOBAL_CONFIG', 'r') as f:
     c = json.load(f)
 c.setdefault('global', {})['model'] = '$model'
 with open('$GLOBAL_CONFIG', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 set_global_api_key() {
     local provider="$1"
     local api_key="$2"
     init_global_config
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('$GLOBAL_CONFIG', 'r') as f:
     c = json.load(f)
 c.setdefault('providers', {}).setdefault('$provider', {})['apiKey'] = '$api_key'
 with open('$GLOBAL_CONFIG', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 clear_global_api_key() {
     local provider="$1"
     init_global_config
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('$GLOBAL_CONFIG', 'r') as f:
     c = json.load(f)
@@ -167,7 +167,7 @@ if 'providers' in c and '$provider' in c['providers']:
     c['providers']['$provider'].pop('apiKey', None)
 with open('$GLOBAL_CONFIG', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 clear_global_config() {
@@ -380,14 +380,14 @@ llm_instance_set_model() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
 c.setdefault('agents', {}).setdefault('defaults', {})['model'] = '$model'
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 llm_instance_set_provider() {
@@ -396,14 +396,14 @@ llm_instance_set_provider() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
 c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = '$provider'
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 llm_instance_set_api_key() {
@@ -413,14 +413,14 @@ llm_instance_set_api_key() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
 c.setdefault('providers', {}).setdefault('$provider', {})['apiKey'] = '$api_key'
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 llm_instance_clear_api_key() {
@@ -429,7 +429,7 @@ llm_instance_clear_api_key() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
@@ -437,7 +437,7 @@ if 'providers' in c and '$provider' in c['providers']:
     c['providers']['$provider'].pop('apiKey', None)
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 llm_instance_reset() {
@@ -445,7 +445,7 @@ llm_instance_reset() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
@@ -455,7 +455,7 @@ if 'providers' in c:
     c.pop('providers', None)
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 llm_instance_apply_global() {
@@ -471,7 +471,7 @@ llm_instance_apply_global() {
         return 1
     fi
     
-    python3 << PYEOF
+    python3 -c "
 import json
 with open('${instance_dir}/config.json', 'r') as f:
     c = json.load(f)
@@ -483,7 +483,7 @@ if '$global_model':
     
 with open('${instance_dir}/config.json', 'w') as f:
     json.dump(c, f, indent=2)
-PYEOF
+"
 }
 
 show_instance_effective_config() {
@@ -516,29 +516,29 @@ prompt_api_key_choice() {
     local provider="$1"
     local scope="$2"
     
-    local current_key
+    local current_key=""
     if [[ "$scope" == "global" ]]; then
         current_key=$(get_global_api_key "$provider")
     fi
     
-    echo
-    echo -e "${CYAN}API Key Configuration for $provider${NC}"
-    echo -e "${CYAN}─────────────────────────────────────${NC}"
+    echo >&2
+    echo -e "${CYAN}API Key Configuration for $provider${NC}" >&2
+    echo -e "${CYAN}─────────────────────────────────────${NC}" >&2
     
     if [[ -n "$current_key" ]]; then
         local masked="${current_key:0:10}...${current_key: -4}"
-        echo -e "  Current: ${GREEN}$masked${NC}"
-        echo
-        echo -e "  [1] Keep current API key"
-        echo -e "  [2] Enter new API key"
-        echo -e "  [3] Clear API key"
+        echo -e "  Current: ${GREEN}$masked${NC}" >&2
+        echo >&2
+        echo -e "  [1] Keep current API key" >&2
+        echo -e "  [2] Enter new API key" >&2
+        echo -e "  [3] Clear API key" >&2
     else
-        echo -e "  Current: ${YELLOW}not set${NC}"
-        echo
-        echo -e "  [1] Enter new API key"
-        echo -e "  [2] Skip (no API key)"
+        echo -e "  Current: ${YELLOW}not set${NC}" >&2
+        echo >&2
+        echo -e "  [1] Enter new API key" >&2
+        echo -e "  [2] Skip (no API key)" >&2
     fi
-    echo
+    echo >&2
     read -p "Choose [1-${current_key:+3}]: " choice
     
     case ${choice:-1} in
@@ -568,16 +568,16 @@ prompt_api_key_choice() {
 }
 
 select_llm_provider_interactive() {
-    echo
-    print_step "Select LLM provider:"
-    echo
-    echo -e "  ${GREEN}1) OpenRouter${NC} (recommended) - global access to all models"
-    echo -e "  2) OpenAI - Direct OpenAI API"
-    echo -e "  3) Anthropic - Direct Claude API"
-    echo -e "  4) DeepSeek - Chinese models"
-    echo -e "  5) Groq - Fast inference"
-    echo -e "  6) Custom - OpenAI-compatible"
-    echo
+    echo >&2
+    print_step "Select LLM provider:" >&2
+    echo >&2
+    echo -e "  ${GREEN}1) OpenRouter${NC} (recommended) - global access to all models" >&2
+    echo -e "  2) OpenAI - Direct OpenAI API" >&2
+    echo -e "  3) Anthropic - Direct Claude API" >&2
+    echo -e "  4) DeepSeek - Chinese models" >&2
+    echo -e "  5) Groq - Fast inference" >&2
+    echo -e "  6) Custom - OpenAI-compatible" >&2
+    echo >&2
     read -p "Choose provider [1]: " provider_choice
 
     case ${provider_choice:-1} in
@@ -595,21 +595,21 @@ select_model_interactive() {
     local provider="$1"
     local current_model="${2:-}"
     
-    echo
-    echo -e "Models for $provider:"
+    echo >&2
+    echo -e "Models for $provider:" >&2
     local models=()
     local i=1
     while IFS= read -r model; do
         models+=("$model")
         if [[ "$model" == "$current_model" ]]; then
-            echo -e "  ${GREEN}$i) $model (current)${NC}"
+            echo -e "  ${GREEN}$i) $model (current)${NC}" >&2
         else
-            echo -e "  $i) $model"
+            echo -e "  $i) $model" >&2
         fi
         ((i++))
     done < <(get_provider_models_list "$provider")
-    echo -e "  $i) Other model"
-    echo
+    echo -e "  $i) Other model" >&2
+    echo >&2
     read -p "Choose model [1]: " model_choice
 
     local selected_model="$current_model"
