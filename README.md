@@ -2,6 +2,8 @@
 
 **AI agents, minus the complexity.**
 
+<img width="477" height="632" alt="image" src="https://github.com/user-attachments/assets/6fa56a61-5a69-4f3e-81c0-db10dcfb0120" />
+
 Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
 
 AI Manager runs your AI agents in isolated Docker containers. Each agent gets its own sandboxed environment with **no access** to other containers or your host system — only the folders explicitly mounted in each agent's `docker-compose.yml`. Your data, your control.
