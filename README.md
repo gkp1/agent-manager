@@ -1,5 +1,8 @@
 # 🐈 AI Manager
 
+| [🚀 Quick Start](#-quick-start) | [✨ Features](#-features) | [📁 Folder Structure](#-multi-agent-folder-structure-example) | [🏗️ Architecture](#-architecture) | [🤖 LLM Providers](#-supported-llm-providers) | [🐛 Troubleshooting](#-troubleshooting) |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+
 <img width="2750" height="1536" alt="AI Manager" src="https://github.com/user-attachments/assets/34af13a6-e745-462f-a501-a90b7bfbdf95" />
 
 Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
