@@ -174,11 +174,11 @@ chmod +x xnanobot.sh
   📊 Agents
   [wa1] WhatsApp ✅ Connected
 
-  ⚡ Configuração
-    [1] Configurar Tudo  [2] Pré-requisitos  [3] Build Imagem
+  ⚡ Configuration
+    [1] Configure All  [2] Prerequisites  [3] Build Image
 
-  📦 Instâncias
-    [4] Criar  [5] Criar Múltiplas  [6] Listar
+  📦 Instances
+    [4] Create  [5] Create Multiple  [6] List
     ...
 ```
 
@@ -305,13 +305,13 @@ volumes:
 
 When creating an instance, you'll be prompted:
 ```
-Selecione o provedor LLM:
-  1) OpenRouter (recomendado) - Acesso global a todos os modelos
-  2) OpenAI - API direta OpenAI
-  3) Anthropic - API direta Claude
-  4) DeepSeek - Modelos chineses
-  5) Groq - Inference rápida
-  6) Personalizado (OpenAI-compatible) - Endpoints locais/customizados
+Select LLM provider:
+  1) OpenRouter (recommended) - Global access to all models
+  2) OpenAI - Direct OpenAI API
+  3) Anthropic - Direct Claude API
+  4) DeepSeek - Chinese models
+  5) Groq - Fast inference
+  6) Custom (OpenAI-compatible) - Local/custom endpoints
 ```
 
 ## 📱 WhatsApp Audio Support

@@ -84,13 +84,13 @@ whatsapp_login_flow() {
     mkdir -p whatsapp-auth
 
     echo
-    print_step "Iniciando login WhatsApp..."
-    echo -e "${YELLOW}  1. QR Code vai aparecer abaixo${NC}"
-    echo -e "${YELLOW}  2. Abra WhatsApp → Dispositivos vinculados → Vincular dispositivo${NC}"
-    echo -e "${YELLOW}  3. Escaneie o QR Code${NC}"
-    echo -e "${YELLOW}  4. Quando ver 'Connected', pressione Ctrl+C${NC}"
+    print_step "Starting WhatsApp login..."
+    echo -e "${YELLOW}  1. QR Code will appear below${NC}"
+    echo -e "${YELLOW}  2. Open WhatsApp → Linked Devices → Link Device${NC}"
+    echo -e "${YELLOW}  3. Scan the QR Code${NC}"
+    echo -e "${YELLOW}  4. When you see 'Connected', press Ctrl+C${NC}"
     echo
-    read -p "  Pressione Enter para começar..."
+    read -p "  Press Enter to start..."
 
     # Interactive login — all volumes mounted, no docker cp needed
     docker run -it \
@@ -181,11 +181,11 @@ reconnect_whatsapp() {
     local instance_dir="${NANOBOT_INSTANCES}/${instance_name}"
 
     if [[ ! -d "$instance_dir" ]]; then
-        print_error "Instância não encontrada: $instance_name"
+        print_error "Instance not found: $instance_name"
         return 1
     fi
 
-    print_step "Reconectando WhatsApp para $instance_name..."
+    print_step "Reconnecting WhatsApp for $instance_name..."
 
     cd "$instance_dir"
     docker compose down 2>/dev/null || true
@@ -203,7 +203,7 @@ reconnect_whatsapp() {
     docker compose up -d
     cd - > /dev/null 2>&1
 
-    print_success "WhatsApp reconectado para $instance_name!"
+    print_success "WhatsApp reconnected for $instance_name!"
 }
 ```
 
@@ -217,11 +217,11 @@ upgrade_whatsapp_bridge() {
     local instance_dir="${NANOBOT_INSTANCES}/${instance_name}"
 
     if [[ ! -d "$instance_dir" ]]; then
-        print_error "Instância não encontrada: $instance_name"
+        print_error "Instance not found: $instance_name"
         return 1
     fi
 
-    print_step "Atualizando WhatsApp bridge para $instance_name..."
+    print_step "Updating WhatsApp bridge for $instance_name..."
 
     cd "$instance_dir"
     docker compose down 2>/dev/null || true
@@ -240,7 +240,7 @@ upgrade_whatsapp_bridge() {
     docker compose up -d
     cd - > /dev/null 2>&1
 
-    print_success "Bridge WhatsApp atualizado e instância reiniciada!"
+    print_success "WhatsApp bridge updated and instance restarted!"
 }
 ```
 
@@ -250,14 +250,14 @@ upgrade_whatsapp_bridge() {
 
 ```bash
 login-whatsapp)
-    print_step "Conectando WhatsApp para $instance_name..."
+    print_step "Connecting WhatsApp for $instance_name..."
     docker compose down 2>/dev/null || true
     whatsapp_login_flow "$(pwd)" "nanobot-login-${instance_name}"
     # Auto-start if bridge was initialized
     if [[ -f "$(pwd)/bridge/dist/index.js" ]]; then
-        print_step "Iniciando instância..."
+        print_step "Starting instance..."
         docker compose up -d
-        print_success "Instância iniciada!"
+        print_success "Instance started!"
     fi
     ;;
 ```

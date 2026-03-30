@@ -115,7 +115,7 @@ configure_whatsapp_instance() {
 
     local config_file="${instance_dir}/config.json"
     if [[ ! -f "$config_file" ]]; then
-        print_error "config.json not found em $instance_dir"
+        print_error "config.json not found in $instance_dir"
         return 1
     fi
 
@@ -129,7 +129,7 @@ print('whatsapp' if 'whatsapp' in channels else (list(channels.keys())[0] if cha
 " 2>/dev/null)
 
     if [[ "$channel" != "whatsapp" ]]; then
-        print_error "Instância $instance_name is not WhatsApp (channel: $channel)"
+        print_error "Instance $instance_name is not WhatsApp (channel: $channel)"
         return 1
     fi
 
@@ -179,7 +179,7 @@ cfg.setdefault('channels', {}).setdefault('whatsapp', {})['allowFrom'] = ['*']
 with open('$config_file', 'w') as f:
     json.dump(cfg, f, indent=2)
 "
-                print_success "allowFrom configurado para [\"*\"]"
+                print_success "allowFrom configured for [\"*\"]"
                 ;;
             2)
                 echo "Enter numbers separated by comma:"
@@ -194,7 +194,7 @@ cfg.setdefault('channels', {}).setdefault('whatsapp', {})['allowFrom'] = nums
 with open('$config_file', 'w') as f:
     json.dump(cfg, f, indent=2)
 "
-                    print_success "allowFrom atualizado"
+                    print_success "allowFrom updated"
                 fi
                 ;;
             3)
