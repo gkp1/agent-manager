@@ -1,0 +1,29 @@
+# Nanobot source (managed separately)
+nanobot-source/
+
+# User data directories (outside git)
+../.nanobot/
+../nanobot-instances/
+../nanobot-backups/
+../backups/
+
+# Environment & secrets
+*.env
+.env
+*.key
+*.pem
+*.secret
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Docker volumes and containers
+docker-compose.override.yml
