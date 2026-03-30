@@ -90,53 +90,39 @@ get_agents_status() {
         return
     fi
     
-    local lines=()
-    local max_len=4  # mínimo: "[xx] "
+    local output=""
     
     for dir in "$NANOBOT_INSTANCES"/*/; do
         [[ -f "${dir}docker-compose.yml" ]] || continue
         local name=$(basename "$dir")
         local container="nanobot-${name}"
-        local name_len=${#name}
-        local item_len=$((name_len + 4))  # [name] 
-        [[ $item_len -gt $max_len ]] && max_len=$item_len
         
         if docker ps --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
             local ch=$(get_instance_channel "$dir")
             if [[ "$ch" == "whatsapp" ]]; then
-                # Buscar última mensagem de status nos logs completos
                 local last=$(docker logs "$container" 2>&1 | grep -E "✅ Connected to WhatsApp|WhatsApp status: (connected|disconnected)" 2>/dev/null | tail -1)
                 if [[ "$last" == *"Connected"* ]] || [[ "$last" == *"connected"* ]]; then
-                    lines+=("${name}|${ch}|✅")
+                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${GREEN}✅${NC}             ${PURPLE}║${NC}\n"
                 elif [[ "$last" == *"disconnected"* ]]; then
-                    lines+=("${name}|${ch}|⚠️")
+                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${YELLOW}⚠️${NC}             ${PURPLE}║${NC}\n"
                 else
-                    lines+=("${name}|${ch}|❓")
+                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${BLUE}?${NC}              ${PURPLE}║${NC}\n"
                 fi
             else
-                lines+=("${name}|${ch}|🟢")
+                output+=" ${PURPLE}║${NC}   [${name}] ${ch} ${GREEN}●${NC}               ${PURPLE}║${NC}\n"
             fi
         else
-            lines+=("${name}|offline|⚫")
+            output+=" ${PURPLE}║${NC}   [${name}] ⚫ Offline            ${PURPLE}║${NC}\n"
         fi
     done
     
-    if [[ ${#lines[@]} -eq 0 ]]; then
-        AGENT_STATUS_CACHE="  No agents"
-    else
-        local output=""
-        for line in "${lines[@]}"; do
-            IFS='|' read -r n ch icon <<< "$line"
-            local padding=$((max_len - ${#n} - 2))
-            local pad=""
-            for ((i=0; i<padding; i++)); do pad+=" "; done
-            output+="  [${n}]${pad} ${ch} ${icon}\n"
-        done
-        AGENT_STATUS_CACHE="$output"
+    if [[ -z "$output" ]]; then
+        output=" ${PURPLE}║${NC}   No agents connected           ${PURPLE}║${NC}\n"
     fi
     
+    AGENT_STATUS_CACHE="$output"
     AGENT_STATUS_CACHE_TIME=$current_time
-    echo -e "$AGENT_STATUS_CACHE"
+    echo -e "$output"
 }
 
 # Verificar sistema operacional
@@ -2050,80 +2036,49 @@ PYEOF
 show_menu() {
     clear
     
-    # Obter status dos agentes para sidebar
+    # Obter status dos agentes
     local agent_status
     agent_status=$(get_agents_status)
-    local status_lines=()
-    while IFS= read -r line; do
-        status_lines+=("$line")
-    done <<< "$agent_status"
-    local num_status=${#status_lines[@]}
     
-    # Headers
-    local h1="🐈 Nanobot Helper v2.0"
-    local h2="WhatsApp Audio Patch + Multi-Provider LLM"
-    local sh1="📊 Agents"
+    # Header
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}    ${PURPLE}🐈 Nanobot Helper v2.0${NC}                              ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}    ${BLUE}WhatsApp Audio Patch + Multi-Provider LLM${NC}             ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════╝${NC}"
     
-    # Box dimensions
-    local menu_w=66
-    local side_w=30
-    local total_w=$((menu_w + side_w + 5))
+    # Agent status box
+    echo -e " ${PURPLE}╔════════════════════════════════╗${NC}"
+    echo -e " ${PURPLE}║${NC} ${PURPLE}📊 Agents${NC}                          ${PURPLE}║${NC}"
+    echo -e " ${PURPLE}║${NC}${agent_status}"
+    echo -e " ${PURPLE}╚════════════════════════════════╝${NC}"
     
-    # Top border with side box
-    echo -e "${CYAN}╔$(printf '═%.0s' $(seq 1 $menu_w))╗${NC} ${PURPLE}╔$(printf '═%.0s' $(seq 1 $side_w))╗${NC}"
-    echo -e "${CYAN}║${NC} $(printf "%-${menu_w}s" "${PURPLE}${h1}${NC}") ${CYAN}║${NC} ${PURPLE}║${NC} $(printf "%-${side_w}s" "${PURPLE}${sh1}${NC}") ${PURPLE}║${NC}"
-    echo -e "${CYAN}║${NC} $(printf "%-${menu_w}s" "${BLUE}${h2}${NC}") ${CYAN}║${NC} ${PURPLE}║${NC} $(printf "%-${side_w}s" "") ${PURPLE}║${NC}"
-    
-    # Status lines in sidebar (pad menu lines)
-    local menu_lines=(
-        "${PURPLE}⚡ Configuração${NC}"
-        "  ${YELLOW}[1]${NC} Config Tudo  ${YELLOW}[2]${NC} Pré-req  ${YELLOW}[3]${NC} Build"
-        "${CYAN}📦 Instâncias${NC}"
-        "  ${CYAN}[4]${NC} Criar  ${CYAN}[5]${NC} Multi  ${CYAN}[6]${NC} Listar"
-        "${GREEN}🎮 Controle${NC}"
-        "  ${GREEN}[7]${NC} Iniciar  ${RED}[8]${NC} Parar  ${BLUE}[9]${NC} Reiniciar"
-        "  ${PURPLE}[10]${NC} Status  ${CYAN}[11]${NC} Logs  ${CYAN}[12]${NC} Chat"
-        "${GREEN}📱 WhatsApp${NC}"
-        "  ${GREEN}[13]${NC} Login  ${YELLOW}[14]${NC} Reconectar  ${YELLOW}[15]${NC} Update Bridge"
-        "  ${CYAN}[16]${NC} Configurar"
-        "${BLUE}🔄 Em Lote${NC}"
-        "  ${GREEN}[17]${NC} Iniciar Todas  ${RED}[18]${NC} Parar Todas"
-        "  ${BLUE}[19]${NC} Reiniciar  ${YELLOW}[20]${NC} Atualizar"
-        "${PURPLE}🔧 Sistema${NC}"
-        "  ${PURPLE}[21]${NC} Update Nanobot  ${PURPLE}[22]${NC} Rebuild Imagem"
-        "  ${CYAN}[23]${NC} Config Instância  ${CYAN}[24]${NC} Ajuda"
-        "${RED}⚠️  Perigo${NC}"
-        "  ${RED}[25]${NC} Deletar Instância ${RED}(IRREVERSÍVEL)${NC}"
-        ""
-        "  ${RED}[0]${NC} Sair"
-    )
-    
-    local i=0
-    for mline in "${menu_lines[@]}"; do
-        # Remove ANSI codes for length calculation
-        local clean_line=$(echo -e "$mline" | sed 's/\x1b\[[0-9;]*m//g')
-        local line_len=${#clean_line}
-        local padding=$((menu_w - line_len))
-        [[ $padding -lt 0 ]] && padding=0
-        
-        # Sidebar content
-        local side_content=""
-        if [[ $i -lt $num_status ]]; then
-            side_content="${status_lines[$i]}"
-        fi
-        
-        # Calculate sidebar padding
-        local clean_side=$(echo -e "$side_content" | sed 's/\x1b\[[0-9;]*m//g' 2>/dev/null || echo "$side_content")
-        local side_len=${#clean_side}
-        local side_padding=$((side_w - side_len))
-        [[ $side_padding -lt 0 ]] && side_padding=0
-        
-        echo -e "${CYAN}║${NC} ${mline}$(printf '%*s' $padding '') ${CYAN}║${NC} ${PURPLE}║${NC} ${side_content}$(printf '%*s' $side_padding '') ${PURPLE}║${NC}"
-        ((i++))
-    done
-    
-    # Bottom border
-    echo -e "${CYAN}╚$(printf '═%.0s' $(seq 1 $menu_w))╝${NC} ${PURPLE}╚$(printf '═%.0s' $(seq 1 $side_w))╝${NC}"
+    echo
+    echo -e "  ${PURPLE}⚡ Configuração${NC}"
+    echo -e "    ${YELLOW}[1]${NC} Configurar Tudo  ${YELLOW}[2]${NC} Pré-requisitos  ${YELLOW}[3]${NC} Build Imagem"
+    echo
+    echo -e "  ${CYAN}📦 Instâncias${NC}"
+    echo -e "    ${CYAN}[4]${NC} Criar  ${CYAN}[5]${NC} Criar Múltiplas  ${CYAN}[6]${NC} Listar"
+    echo
+    echo -e "  ${GREEN}🎮 Controle${NC}"
+    echo -e "    ${GREEN}[7]${NC} Iniciar  ${RED}[8]${NC} Parar  ${BLUE}[9]${NC} Reiniciar"
+    echo -e "    ${PURPLE}[10]${NC} Status  ${CYAN}[11]${NC} Logs  ${CYAN}[12]${NC} Chat"
+    echo
+    echo -e "  ${GREEN}📱 WhatsApp${NC}"
+    echo -e "    ${GREEN}[13]${NC} Login  ${YELLOW}[14]${NC} Reconectar  ${YELLOW}[15]${NC} Update Bridge"
+    echo -e "    ${CYAN}[16]${NC} Configurar"
+    echo
+    echo -e "  ${BLUE}🔄 Em Lote${NC}"
+    echo -e "    ${GREEN}[17]${NC} Iniciar Todas  ${RED}[18]${NC} Parar Todas"
+    echo -e "    ${BLUE}[19]${NC} Reiniciar Todas  ${YELLOW}[20]${NC} Atualizar Todas"
+    echo
+    echo -e "  ${PURPLE}🔧 Sistema${NC}"
+    echo -e "    ${PURPLE}[21]${NC} Atualizar Nanobot  ${PURPLE}[22]${NC} Reconstruir Imagem"
+    echo -e "    ${CYAN}[23]${NC} Config Instância  ${CYAN}[24]${NC} Ajuda"
+    echo
+    echo -e "  ${RED}⚠️  Perigo${NC}"
+    echo -e "    ${RED}[25]${NC} Deletar Instância ${RED}(IRREVERSÍVEL)${NC}"
+    echo
+    echo -e "    ${RED}[0]${NC} Sair"
     echo
 }
 
