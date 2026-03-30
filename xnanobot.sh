@@ -382,57 +382,23 @@ setup_guide_flow() {
 }
 
 # ============================================================
-# Installation functions
+# Installation functions (DEPRECATED - Docker-only setup)
 # ============================================================
-
-install_nanobot_pip() {
-    print_step "Installing nanobot via pip..."
-    pip3 install -U nanobot-ai
-    print_success "nanobot installed via pip!"
-}
-
-install_nanobot_uv() {
-    print_step "Installing nanobot via uv..."
-    if ! check_command uv; then
-        print_warning "uv not found. Installing uv first..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$PATH"
-    fi
-    uv tool install nanobot-ai
-    print_success "nanobot installed via uv!"
-}
-
-install_nanobot_source() {
-    print_step "Installing nanobot from source..."
-    local temp_dir
-    temp_dir=$(mktemp -d)
-    
-    git clone "$NANOBOT_REPO" "$temp_dir/nanobot"
-    cd "$temp_dir/nanobot"
-    pip3 install -e .
-    
-    cd - > /dev/null 2>&1
-    rm -rf "$temp_dir"
-    print_success "nanobot installed from source!"
-}
+# NOTE: This is a Docker-only setup. All nanobot instances run in Docker containers.
+# The Docker image is built via build_nanobot_image() using nanobot-source/.
+# These functions are kept for reference but are not used.
 
 install_nanobot() {
     print_header
-    echo "Choose installation method:"
-    echo "1) pip - recommended for normal use"
-    echo "2) uv - stable, fast"
-    echo "3) Source code - latest features, development"
-    echo "4) Back"
+    print_warning "This is a Docker-only setup!"
     echo
-    read -p "Option: " choice
-    
-    case $choice in
-        1) install_nanobot_pip ;;
-        2) install_nanobot_uv ;;
-        3) install_nanobot_source ;;
-        4) return ;;
-        *) print_error "Invalid option!" ;;
-    esac
+    echo "All nanobot agents run in isolated Docker containers."
+    echo "No host-side installation needed."
+    echo
+    echo "To build the Docker image, use:"
+    echo "  $SCRIPT_NAME build"
+    echo
+    read -p "Press Enter to continue..."
 }
 
 # ============================================================
@@ -1318,49 +1284,21 @@ print(c.get('agents',{}).get('defaults',{}).get('model','?'))
 }
 
 # ============================================================
-# Update functions
+# Update functions (Docker-only)
 # ============================================================
 
 update_nanobot() {
     print_header
-    print_step "Updating nanobot..."
-    
-    echo "How did you install nanobot?"
-    echo "1) pip"
-    echo "2) uv"
-    echo "3) Source code"
+    print_warning "This is a Docker-only setup!"
     echo
-    read -p "Option: " choice
-    
-    case $choice in
-        1)
-            print_step "Updating via pip..."
-            pip3 install -U nanobot-ai
-            ;;
-        2)
-            print_step "Updating via uv..."
-            uv tool upgrade nanobot-ai
-            ;;
-        3)
-            print_step "Updating from source..."
-            if [[ -d "nanobot" ]]; then
-                cd nanobot
-                git pull
-                pip3 install -e .
-                cd - > /dev/null 2>&1
-            else
-                print_warning "nanobot repository not found in current directory."
-                print_info "Re-cloning..."
-                install_nanobot_source
-            fi
-            ;;
-        *)
-            print_error "Invalid option!"
-            ;;
-    esac
-    
-    print_success "nanobot updated!"
-    nanobot --version
+    echo "To update nanobot in Docker containers:"
+    echo "  1. Rebuild the Docker image: $SCRIPT_NAME rebuild"
+    echo "  2. Restart instances: $SCRIPT_NAME restart-all"
+    echo
+    echo "The nanobot-source/ directory contains the source code."
+    echo "Use '$SCRIPT_NAME rebuild' to rebuild the Docker image."
+    echo
+    read -p "Press Enter to continue..."
 }
 
 rebuild_docker_image() {
@@ -2040,11 +1978,11 @@ show_menu() {
     local agent_status
     agent_status=$(get_agents_status)
     
-    # Header
-    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${NC}    ${PURPLE}🐈 Nanobot Helper v2.0${NC}                              ${CYAN}║${NC}"
-    echo -e "${CYAN}║${NC}    ${BLUE}WhatsApp Audio Patch + Multi-Provider LLM${NC}             ${CYAN}║${NC}"
-    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════╝${NC}"
+    # Header - top/bottom borders only
+    echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${PURPLE}  Nanobot Helper v2.0${NC}"
+    echo -e "${BLUE}  WhatsApp Audio Patch + Multi-Provider LLM${NC}"
+    echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
     
     # Agent status (simple list)
     echo -e "  ${PURPLE}📊 Agents${NC}"
@@ -2070,11 +2008,11 @@ show_menu() {
     echo -e "    ${BLUE}[19]${NC} Restart All  ${YELLOW}[20]${NC} Update All"
     echo
     echo -e "  ${PURPLE}🔧 System${NC}"
-    echo -e "    ${PURPLE}[21]${NC} Update Nanobot  ${PURPLE}[22]${NC} Rebuild Image"
-    echo -e "    ${CYAN}[23]${NC} Config Instance  ${CYAN}[24]${NC} Help"
+    echo -e "    ${PURPLE}[21]${NC} Rebuild Image  ${CYAN}[22]${NC} Config Instance"
+    echo -e "    ${CYAN}[23]${NC} Help"
     echo
     echo -e "  ${RED}⚠️  Danger${NC}"
-    echo -e "    ${RED}[25]${NC} Delete Instance (IRREVERSIBLE)"
+    echo -e "    ${RED}[24]${NC} Delete Instance (IRREVERSIBLE)"
     echo
     echo
     echo -e "    ${RED}[0]${NC} Exit"
@@ -2143,7 +2081,7 @@ interactive_menu() {
     # Welcome message
     clear
     echo -e "${PURPLE}══════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}                    🐈 Nanobot Helper v1.0${NC}"
+    echo -e "${PURPLE}        Nanobot Helper v2.0 - AI Manager for Nanobot${NC}"
     echo -e "${PURPLE}══════════════════════════════════════════════════════════════════${NC}"
     echo
     echo -e "${GREEN}Welcome to AI Manager!${NC}"
@@ -2157,7 +2095,7 @@ interactive_menu() {
     
     while true; do
         show_menu
-        read -p "Choose an option [0-25]: " choice
+        read -p "Choose an option [0-24]: " choice
         
         case $choice in
             1)
@@ -2221,18 +2159,15 @@ interactive_menu() {
                 manage_all_instances update
                 ;;
             21)
-                update_nanobot
-                ;;
-            22)
                 rebuild_docker_image
                 ;;
-            23)
+            22)
                 configure_instance_menu
                 ;;
-            24)
+            23)
                 show_help
                 ;;
-            25)
+            24)
                 delete_instance
                 ;;
             0)
@@ -2241,7 +2176,7 @@ interactive_menu() {
                 exit 0
                 ;;
             *)
-                print_error "Invalid option. Choose a number from 0 to 25."
+                print_error "Invalid option. Choose a number from 0 to 24."
                 ;;
         esac
         
