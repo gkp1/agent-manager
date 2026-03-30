@@ -1980,7 +1980,7 @@ show_menu() {
     
     # Header - top/bottom borders only
     echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}  Nanobot Helper v2.0${NC}"
+    echo -e "${PURPLE} 🐈 Nanobot Helper v2.0${NC}"
     echo -e "${BLUE}  WhatsApp Audio Patch + Multi-Provider LLM${NC}"
     echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
     
