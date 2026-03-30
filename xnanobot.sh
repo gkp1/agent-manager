@@ -102,22 +102,22 @@ get_agents_status() {
             if [[ "$ch" == "whatsapp" ]]; then
                 local last=$(docker logs "$container" 2>&1 | grep -E "✅ Connected to WhatsApp|WhatsApp status: (connected|disconnected)" 2>/dev/null | tail -1)
                 if [[ "$last" == *"Connected"* ]] || [[ "$last" == *"connected"* ]]; then
-                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${GREEN}✅${NC}             ${PURPLE}║${NC}\n"
+                    output+="  [${name}] WhatsApp ${GREEN}✅ Connected${NC}\n"
                 elif [[ "$last" == *"disconnected"* ]]; then
-                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${YELLOW}⚠️${NC}             ${PURPLE}║${NC}\n"
+                    output+="  [${name}] WhatsApp ${YELLOW}⚠️ Disconnected${NC}\n"
                 else
-                    output+=" ${PURPLE}║${NC}   [${name}] WhatsApp ${BLUE}?${NC}              ${PURPLE}║${NC}\n"
+                    output+="  [${name}] WhatsApp ${BLUE}❓ Unknown${NC}\n"
                 fi
             else
-                output+=" ${PURPLE}║${NC}   [${name}] ${ch} ${GREEN}●${NC}               ${PURPLE}║${NC}\n"
+                output+="  [${name}] ${ch} ${GREEN}● Running${NC}\n"
             fi
         else
-            output+=" ${PURPLE}║${NC}   [${name}] ⚫ Offline            ${PURPLE}║${NC}\n"
+            output+="  [${name}] ⚫ Offline\n"
         fi
     done
     
     if [[ -z "$output" ]]; then
-        output=" ${PURPLE}║${NC}   No agents connected           ${PURPLE}║${NC}\n"
+        output="  No agents\n"
     fi
     
     AGENT_STATUS_CACHE="$output"
@@ -2046,11 +2046,9 @@ show_menu() {
     echo -e "${CYAN}║${NC}    ${BLUE}WhatsApp Audio Patch + Multi-Provider LLM${NC}             ${CYAN}║${NC}"
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════╝${NC}"
     
-    # Agent status box
-    echo -e " ${PURPLE}╔════════════════════════════════╗${NC}"
-    echo -e " ${PURPLE}║${NC} ${PURPLE}📊 Agents${NC}                          ${PURPLE}║${NC}"
-    echo -e " ${PURPLE}║${NC}${agent_status}"
-    echo -e " ${PURPLE}╚════════════════════════════════╝${NC}"
+    # Agent status (simple list)
+    echo -e "  ${PURPLE}📊 Agents${NC}"
+    echo -e "${agent_status}"
     
     echo
     echo -e "  ${PURPLE}⚡ Configuração${NC}"
