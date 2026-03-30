@@ -2,7 +2,7 @@
 
 **AI agents, minus the complexity.**
 
-<img width="423" height="573" alt="image" src="https://github.com/user-attachments/assets/e6b633ec-fca0-4bfd-8a28-1407a7600595" />
+<img width="417" height="583" alt="Tabby_NnaAE1dE3Q" src="https://github.com/user-attachments/assets/3380be65-ee7d-4a29-8e9e-4cf262644e2d" />
 
 <img width="417" height="194" alt="image" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" />
 
@@ -32,6 +32,11 @@ One script. One folder. Everything handled. Install, build, create, manage — a
 - **Real-time Agent Status** — See all your agents, their channels, and connection status at a glance in the interactive menu.
 
 - **Multi-Instance Management** — Create, start, stop, monitor multiple isolated agents from one place.
+
+## Instance creation example
+
+<img width="421" height="571" alt="Tabby_Kbcecvw6gE" src="https://github.com/user-attachments/assets/c1c64147-e66f-49b2-94a4-c594872f0903" />
+
 
 ## 📋 Requirements
 
