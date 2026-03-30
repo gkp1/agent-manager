@@ -1,21 +1,32 @@
 # 🐈 AI Manager
 
-**Tired of complex AI agent setups?**
+**AI agents, minus the complexity.**
 
-Running 100 commands just to configure a simple AI agent? Want 2 isolated agents (or more) but don't want to deal with environment conflicts, dependency hell, and manual configuration for every single one?
+Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
 
-**AI Manager fixes that.**
+AI Manager runs your AI agents in isolated Docker containers. Each agent gets its own sandboxed environment with **no access** to other containers or your host system — only the folders explicitly mounted in each agent's `docker-compose.yml`. Your data, your control.
 
-One script. Interactive menu. Done. Create isolated AI agents in seconds - each with its own memory, channels, and LLM provider. WhatsApp, Telegram, Discord - all with a few keystrokes.
+### The Problem
+
+Setting up AI agents is painful. Multiple tools, conflicting dependencies, manual configuration for each instance. Want 2 agents? Double the headaches.
+
+### The Solution
+
+One script. One folder. Everything handled. Install, build, create, manage — all from a single interactive menu or CLI commands. You focus on your agents, not infrastructure.
 
 ## ✨ Features
 
-- **Interactive Menu** - Clean CLI with real-time agent status
-- **Multi-Instance** - Run multiple isolated nanobot agents
-- **WhatsApp Audio** - Native voice message support (patched bridge)
-- **Multi-Provider LLM** - OpenRouter, OpenAI, Anthropic, DeepSeek, Groq, or custom
-- **Docker Isolation** - Each instance runs in its own container
-- **Git Versioned** - Track your configuration and patches
+- **Zero Config Overhead** — Script handles installation, Docker builds, and agent management. You just manage agents.
+
+- **True Docker Isolation** — Each agent runs in its own container with isolated workspace, memory, and sessions. No cross-contamination. What each container can access is defined by bind mounts in its `docker-compose.yml` — nothing else.
+
+- **WhatsApp Audio Patch** — We patch the nanobot bridge on build to natively handle voice messages (`.ogg` downloads). This isn't in vanilla nanobot — we add it automatically.
+
+- **Multi-Provider LLM** — OpenRouter, OpenAI, Anthropic, DeepSeek, Groq, or any OpenAI-compatible endpoint. Configure per-agent, switch anytime.
+
+- **Real-time Agent Status** — See all your agents, their channels, and connection status at a glance in the interactive menu.
+
+- **Multi-Instance Management** — Create, start, stop, monitor multiple isolated agents from one place.
 
 ## 📋 Requirements
 
@@ -97,45 +108,71 @@ chmod +x xnanobot.sh
 
 ## 🏗️ Architecture
 
+### Project Structure
+
 ```
 ~/aimanager/
-├── xnanobot.sh              # Main script
-├── nanobot-instances/       # All instances
+├── xnanobot.sh              # Main script (that's all you need)
+├── nanobot-instances/       # All your agents live here
 │   ├── wa1/
-│   │   ├── config.json      # Instance config
+│   │   ├── config.json      # Agent config (provider, API keys, channels)
 │   │   ├── docker-compose.yml
-│   │   ├── bridge/          # WhatsApp bridge (patched)
-│   │   ├── workspace/       # Agent memory
-│   │   └── whatsapp-auth/   # Session data
-│   └── wa2/
-├── nanobot-source/          # Nanobot source (for builds)
+│   │   ├── bridge/          # WhatsApp bridge (patched for audio)
+│   │   ├── workspace/       # Agent memory, sessions, files
+│   │   └── whatsapp-auth/   # WhatsApp session data
+│   └── wa2/                 # Each agent is independent
+├── nanobot-source/          # Nanobot source (auto-managed for builds)
 └── docs/
 ```
+
+### Docker Isolation Model
+
+Each agent runs in its own Docker container. What it can access is **strictly defined** by bind mounts in its `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./config.json:/root/.nanobot/config.json    # This agent's config
+  - ./workspace:/root/.nanobot/workspace        # This agent's memory
+  - ./bridge:/root/.nanobot/bridge              # This agent's bridge
+  - ./whatsapp-auth:/root/.nanobot/whatsapp-auth  # This agent's session
+```
+
+**What this means:**
+- Agent `wa1` can **only** access `wa1`'s folders
+- Agent `wa2` can **only** access `wa2`'s folders
+- No agent can see, modify, or access another agent's data
+- No agent can access your host filesystem beyond what's explicitly mounted
+- Containers can't talk to each other unless you configure it
 
 ### How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        HOST                                 │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              nanobot-instances/wa1                    │  │
-│  │  ┌─────────────────────────────────────────────────┐  │  │
-│  │  │              Docker Container                   │  │  │
-│  │  │                                                 │  │  │
-│  │  │   ┌─────────────┐      ┌─────────────────┐    │  │  │
-│  │  │   │   Bridge    │◄────►│     Gateway     │    │  │  │
-│  │  │   │  (Node.js)  │ ws   │    (Python)     │    │  │  │
-│  │  │   │  Port 3001  │      │   Port 18790    │    │  │  │
-│  │  │   └──────┬──────┘      └────────┬────────┘    │  │  │
-│  │  │          │                       │             │  │  │
-│  │  │          ▼                       ▼             │  │  │
-│  │  │    ┌─────────┐           ┌────────────┐       │  │  │
-│  │  │    │WhatsApp │           │  LLM API   │       │  │  │
-│  │  │    │  Cloud  │           │ (OpenRouter)│       │  │  │
-│  │  │    └─────────┘           └────────────┘       │  │  │
-│  │  └─────────────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                          HOST                                   │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                   Container: wa1                           │ │
+│  │  ┌──────────────┐    WebSocket    ┌──────────────────┐    │ │
+│  │  │    Bridge    │◄───────────────►│     Gateway      │    │ │
+│  │  │   (Node.js)  │    port 3001    │    (Python)      │    │ │
+│  │  │              │                 │   port 18790     │    │ │
+│  │  └──────┬───────┘                 └────────┬─────────┘    │ │
+│  │         │                                  │              │ │
+│  │         ▼                                  ▼              │ │
+│  │   ┌──────────┐                    ┌──────────────┐        │ │
+│  │   │WhatsApp  │                    │  LLM API     │        │ │
+│  │   │  Cloud   │                    │ (OpenRouter) │        │ │
+│  │   └──────────┘                    └──────────────┘        │ │
+│  │                                                            │ │
+│  │   Volumes: ./config.json  ./workspace  ./bridge           │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                          ⬆️ separated ⬆️                         │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                   Container: wa2                           │ │
+│  │   (Same structure, completely isolated)                    │ │
+│  │   Volumes: ./config.json  ./workspace  ./bridge           │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🤖 Supported LLM Providers
