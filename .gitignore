@@ -32,3 +32,4 @@ nanobot-instances/*/bridge/dist/
 nanobot-instances/*/whatsapp-auth/
 nanobot-instances/*/workspace/sessions/
 nanobot-instances/*/workspace/media/
+nanobot-instances/*
