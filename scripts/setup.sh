@@ -239,7 +239,7 @@ configure_channel() {
             echo "1. Make sure nanobot is running - nanobot gateway"
             echo "2. Execute: nanobot channels login whatsapp"
             echo "3. Scan the QR Code with your WhatsApp"
-            echo "4. Configure em config.json da instance:"
+            echo "4. Configure in instance config.json:"
             echo '   "channels": {'
             echo '     "whatsapp": {'
             echo '       "enabled": true,'
