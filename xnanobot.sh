@@ -25,7 +25,7 @@ PATCH_WHATSAPP_AUDIO=true  # true = aplicar patch de áudio WhatsApp no build
 # Diretório base do aimanager (deve vir primeiro)
 # Usar readlink para resolver symlinks corretamente
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || echo "$0")"
-AIMANAGER_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+AIMANAGER_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 
 # Diretórios padrão
 NANOBOT_HOME="${HOME}/.nanobot"
