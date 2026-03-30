@@ -24,9 +24,10 @@ get_agents_status() {
             local ch=$(get_instance_channel "$dir")
             if [[ "$ch" == "whatsapp" ]]; then
                 local last=$(docker logs "$container" 2>&1 | grep -E "✅ Connected to WhatsApp|WhatsApp status:" 2>/dev/null | tail -1)
-                if [[ "$last" == *"Connected"* ]]; then
+                local last_lower="${last,,}"
+                if [[ "$last_lower" == *"connected"* ]]; then
                     output+="  [${name}] WhatsApp ${GREEN}✅ Connected${NC}\n"
-                elif [[ "$last" == *"disconnected"* ]]; then
+                elif [[ "$last_lower" == *"disconnected"* ]]; then
                     output+="  [${name}] WhatsApp ${YELLOW}⚠️ Disconnected${NC}\n"
                 else
                     output+="  [${name}] WhatsApp ${BLUE}❓ Unknown${NC}\n"
