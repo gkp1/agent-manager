@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# x2nanobot.sh - AI Manager: Script for setup and management of instances nanobot
-# Autor: Created by opencode to help manage nanobot
-# Usage: ./x2nanobot.sh [commands [options]]
+# xnanobot.sh - AI Manager: Script for setup and management of nanobot instances
+# Author: Created by opencode to help manage nanobot
+# Usage: ./xnanobot.sh [commands [options]]
 
 set -euo pipefail
 
 # Script name (for dynamic display)
 SCRIPT_NAME="$(basename "$0")"
 
-# Cores para output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,26 +47,26 @@ print_info() {
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCESSO]${NC} $1"
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[AVISO]${NC} $1"
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}[ERRO]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 print_step() {
-    echo -e "${CYAN}[PASSO]${NC} $1"
+    echo -e "${CYAN}[STEP]${NC} $1"
 }
 
 # Agent status cache
 AGENT_STATUS_CACHE=""
 AGENT_STATUS_CACHE_TIME=0
 
-# Obter canal de uma instance
+# Get channel of an instance
 get_instance_channel() {
     local instance_dir="$1"
     python3 -c "
@@ -84,7 +84,7 @@ get_agents_status() {
     local current_time=$(date +%s)
     local cache_age=$((current_time - AGENT_STATUS_CACHE_TIME))
     
-    # Retornar cache se < 30s
+    # Return cache if < 30s
     if [[ -n "$AGENT_STATUS_CACHE" && $cache_age -lt 30 ]]; then
         echo -e "$AGENT_STATUS_CACHE"
         return
@@ -160,7 +160,7 @@ check_dependencies() {
     # Docker
     if ! check_command docker; then
         missing+=("docker")
-        print_warning "Docker not found. is required for Docker instances."
+        print_warning "Docker not found. Docker is required for Docker instances."
     fi
     
     # Docker Compose (v2+)
@@ -172,7 +172,7 @@ check_dependencies() {
     # Check if Docker is running
     if command -v docker &> /dev/null; then
         if ! docker info &> /dev/null; then
-            print_warning "Docker is not running. start the Docker service."
+            print_warning "Docker is not running. Please start the Docker service."
         fi
     fi
     
@@ -205,7 +205,7 @@ check_dependencies() {
 }
 
 # ============================================================
-# Funções do Guia Docker Multi-Tenant
+# Docker Multi-Tenant Guide Functions
 # ============================================================
 
 check_prerequisites() {
@@ -244,7 +244,7 @@ apply_audio_patch() {
     local whatsapp_file="${repo_dir}/bridge/src/whatsapp.ts"
     
     if [[ ! -f "$whatsapp_file" ]]; then
-        print_error "Arquivo whatsapp.ts not found: $whatsapp_file"
+        print_error "whatsapp.ts file not found: $whatsapp_file"
         return 1
     fi
     
@@ -262,14 +262,14 @@ import sys, os
 
 filepath = os.environ.get('WHATSAPP_FILE', '')
 if not filepath:
-    print('ERRO: WHATSAPP_FILE nao definido.')
+    print('ERROR: WHATSAPP_FILE not set.')
     sys.exit(1)
 
 with open(filepath, 'r') as f:
     content = f.read()
 
 if 'unwrapped.audioMessage' in content:
-    print('Patch ja aplicado.')
+    print('Patch already applied.')
     sys.exit(0)
 
 # Build the audio block (without leading } else if since we replace the closing })
@@ -305,9 +305,9 @@ for i, line in enumerate(lines):
 if replaced:
     with open(filepath, 'w') as f:
         f.write('\n'.join(new_lines))
-    print('Patch aplicado com sucesso.')
+    print('Patch applied successfully.')
 else:
-    print('ERRO: Nao foi possivel encontrar ponto de insercao.')
+    print('ERROR: Could not find insertion point.')
     sys.exit(1)
 PYEOF
     
@@ -321,24 +321,24 @@ PYEOF
 }
 
 build_nanobot_image() {
-    print_step "Building image Docker do nanobot (as per guide)..."
+    print_step "Building Docker image for nanobot (as per guide)..."
     
-    # Clonar ou atualizar repositório
+    # Clone or update repository
     if [[ ! -d "$NANOBOT_SOURCE_DIR" ]]; then
-        print_step "Cloning repository nanobot..."
+        print_step "Cloning nanobot repository..."
         git clone "$NANOBOT_REPO" "$NANOBOT_SOURCE_DIR"
     else
         print_step "Updating repository..."
         cd "$NANOBOT_SOURCE_DIR" && git pull && cd -
     fi
     
-    # Aplicar patch de áudio se habilitado
+    # Apply audio patch if enabled
     if [[ "$PATCH_WHATSAPP_AUDIO" == "true" ]]; then
         apply_audio_patch "$NANOBOT_SOURCE_DIR"
     fi
     
-    # Construir imagem
-    print_step "Executando: docker build -t nanobot ."
+    # Build image
+    print_step "Executing: docker build -t nanobot ."
     cd "$NANOBOT_SOURCE_DIR"
     docker build -t nanobot .
     cd - > /dev/null 2>&1
@@ -356,9 +356,9 @@ setup_guide_flow() {
     echo "2. Build Docker image do nanobot"
     echo "3. Create isolated Docker instance"
     echo
-    read -p "Continuar? (s/n): " confirm
+    read -p "Continue? (y/n): " confirm
     
-    if [[ "$confirm" != "s" && "$confirm" != "S" ]]; then
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         print_info "Setup cancelled."
         return 0
     fi
@@ -399,7 +399,7 @@ install_nanobot_uv() {
         export PATH="$HOME/.local/bin:$PATH"
     fi
     uv tool install nanobot-ai
-    print_success "nanobot instalado via uv!"
+    print_success "nanobot installed via uv!"
 }
 
 install_nanobot_source() {
@@ -422,7 +422,7 @@ install_nanobot() {
     echo "1) pip - recommended for normal use"
     echo "2) uv - stable, fast"
     echo "3) Source code - latest features, development"
-    echo "4) Voltar"
+    echo "4) Back"
     echo
     read -p "Option: " choice
     
@@ -441,9 +441,9 @@ install_nanobot() {
 
 setup_initial() {
     print_header
-    print_step "Initial setup do nanobot..."
+    print_step "Initial nanobot setup..."
     
-    # Verificar se nanobot está instalado
+    # Check if nanobot is installed
     if ! check_command nanobot; then
         print_warning "nanobot not found. Installing..."
         install_nanobot_pip
@@ -457,7 +457,7 @@ setup_initial() {
     fi
     
     print_success "Initial setup completed!"
-    print_info "Edite ~/.nanobot/config.json para adicionar suas chaves de API."
+    print_info "Edit ~/.nanobot/config.json to add your API keys."
 }
 
 configure_channel() {
@@ -487,7 +487,7 @@ configure_channel() {
             echo '    ["*"]              - Anyone can use'
             echo "  groupPolicy:"
             echo '    "mention"  - Only replies when @mentioned in groups - default'
-            echo '    "open"     - Responde a todas as mensagens de grupo'
+            echo '    "open"     - Responds to all group messages'
             echo
             echo "Dip: Use '$SCRIPT_NAME configure-wa <instance>' to configure interactively"
             echo
@@ -496,84 +496,84 @@ configure_channel() {
             ;;
         telegram)
             echo "To configure Telegram:"
-            echo "1. Abra Telegram, procure @BotFather"
-            echo "2. Envie /newbot e siga as instruções"
-            echo "3. Copie o token do bot"
-            echo "4. Configure em ~/.nanobot/config.json:"
-            echo '   "channels": { "telegram": { "enabled": true, "token": "SEU_TOKEN", "allowFrom": ["SEU_USER_ID"] } }'
+            echo "1. Open Telegram, search for @BotFather"
+            echo "2. Send /newbot and follow instructions"
+            echo "3. Copy the bot token"
+            echo "4. Configure in ~/.nanobot/config.json:"
+            echo '   "channels": { "telegram": { "enabled": true, "token": "YOUR_TOKEN", "allowFrom": ["YOUR_USER_ID"] } }'
             echo
-            echo "Dip: Your User ID appears in Telegram settings as @seuUserId"
-            echo "Copie o valor SEM o símbolo @"
+            echo "Tip: Your User ID appears in Telegram settings as @yourUserId"
+            echo "Copy the value WITHOUT the @ symbol"
             ;;
         discord)
             echo "To configure Discord:"
             echo "1. Access https://discord.com/developers/applications"
             echo "2. Create an application → Bot → Add Bot"
-            echo "3. Copie o token do bot"
-            echo "4. Habilite MESSAGE CONTENT INTENT nas configurações do Bot"
-            echo "5. Configure em ~/.nanobot/config.json:"
-            echo '   "channels": { "discord": { "enabled": true, "token": "SEU_TOKEN", "allowFrom": ["SEU_USER_ID"], "groupPolicy": "mention" } }'
+            echo "3. Copy the bot token"
+            echo "4. Enable MESSAGE CONTENT INTENT in Bot settings"
+            echo "5. Configure in ~/.nanobot/config.json:"
+            echo '   "channels": { "discord": { "enabled": true, "token": "YOUR_TOKEN", "allowFrom": ["YOUR_USER_ID"], "groupPolicy": "mention" } }'
             echo
             echo "To get your User ID:"
-            echo "  - Configurações do Discord → Avançado → Habilite Modo Desenvolvedor"
-            echo "  - Clique com botão direito no seu avatar → Copiar ID do Usuário"
+            echo "  - Discord Settings → Advanced → Enable Developer Mode"
+            echo "  - Right-click on your avatar → Copy User ID"
             ;;
         feishu)
             echo "To configure Feishu:"
             echo "1. Access https://open.feishu.cn/app"
-            echo "2. Crie um novo app → Habilite capacidade Bot"
-            echo "3. Permissões: im:message e im:message.p2p_msg:readonly"
-            echo "4. Eventos: im.message.receive_v1 (Long Connection Mode)"
-            echo "5. Obtenha App ID e App Secret"
-            echo "6. Configure em ~/.nanobot/config.json:"
-            echo '   "channels": { "feishu": { "enabled": true, "appId": "cli_xxx", "appSecret": "xxx", "allowFrom": ["ou_YOUR_OPEN_ID"], "groupPolicy": "mention" } }'
+            echo "2. Create a new app → Enable Bot capability"
+            echo "3. Permissions: im:message and im:message.p2p_msg:readonly"
+            echo "4. Events: im.message.receive_v1 (Long Connection Mode)"
+            echo "5. Get App ID and App Secret"
+            echo "6. Configure in ~/.nanobot/config.json:"
+            echo '   "channels": { "feishu": { "enabled": true, "appId": "cli_xxx", "appSecret": "xxx", "allowFrom": ["or_YOUR_OPEN_ID"], "groupPolicy": "mention" } }'
             ;;
         slack)
             echo "To configure Slack:"
             echo "1. Access https://api.slack.com/apps"
-            echo "2. Crie novo app → From scratch"
+            echo "2. Create new app → From scratch"
             echo "3. Enable Socket Mode - Generate App-Level Token (connections:write)"
-            echo "4. OAuth & Permissions: adicione chat:write, reactions:write, app_mentions:read"
-            echo "5. Event Subscriptions: ative message.im, message.channels, app_mention"
-            echo "6. Configure em ~/.nanobot/config.json:"
-            echo '   "channels": { "slack": { "enabled": true, "botToken": "xoxb-...", "appToken": "xapp-...", "allowFrom": ["SEU_USER_ID"], "groupPolicy": "mention" } }'
+            echo "4. OAuth & Permissions: add chat:write, reactions:write, app_mentions:read"
+            echo "5. Event Subscriptions: enable message.im, message.channels, app_mention"
+            echo "6. Configure in ~/.nanobot/config.json:"
+            echo '   "channels": { "slack": { "enabled": true, "botToken": "xoxb-...", "appToken": "xapp-...", "allowFrom": ["YOUR_USER_ID"], "groupPolicy": "mention" } }'
             ;;
         matrix)
             echo "To configure Matrix:"
-            echo "1. Instale dependências: pip install nanobot-ai[matrix]"
+            echo "1. Install dependencies: pip install nanobot-ai[matrix]"
             echo "2. Create or use a Matrix account (ex: @nanobot:matrix.org)"
-            echo "3. Obtenha accessToken e deviceId"
-            echo "4. Configure em ~/.nanobot/config.json:"
+            echo "3. Get accessToken and deviceId"
+            echo "4. Configure in ~/.nanobot/config.json:"
             echo '   "channels": { "matrix": { "enabled": true, "homeserver": "https://matrix.org", "userId": "@nanobot:matrix.org", "accessToken": "syt_xxx", "deviceId": "NANOBOT01", "allowFrom": ["@user:matrix.org"] } }'
             ;;
         email)
             echo "To configure Email:"
             echo "1. Create a dedicated email account (ex: my-nanobot@gmail.com)"
-            echo "2. Habilite 2-Step Verification → Crie App Password"
-            echo "3. Configure em ~/.nanobot/config.json:"
+            echo "2. Enable 2-Step Verification → Create App Password"
+            echo "3. Configure in ~/.nanobot/config.json:"
             echo '   "channels": { "email": { "enabled": true, "consentGranted": true, "imapHost": "imap.gmail.com", "imapPort": 993, "imapUsername": "my-nanobot@gmail.com", "imapPassword": "app-password", "smtpHost": "smtp.gmail.com", "smtpPort": 587, "smtpUsername": "my-nanobot@gmail.com", "smtpPassword": "app-password", "allowFrom": ["user@example.com"] } }'
             ;;
         *)
             print_error "Channel not supported: $channel"
-            echo "Canais suportados: whatsapp, telegram, discord, feishu, slack, matrix, email"
+            echo "Supported channels: whatsapp, telegram, discord, feishu, slack, matrix, email"
             ;;
     esac
 }
 
 # ============================================================
-# Funções de LLM Provider
+# LLM Provider Functions
 # ============================================================
 
 select_llm_provider() {
     echo >&2
-    print_step "Select provider LLM:" >&2
+    print_step "Select LLM provider:" >&2
     echo >&2
     echo -e "  ${GREEN}1) OpenRouter${NC} (recommended) - global access to all models" >&2
-    echo -e "  2) OpenAI - API direct OpenAI" >&2
-    echo -e "  3) Anthropic - API direct Claude" >&2
+    echo -e "  2) OpenAI - Direct OpenAI API" >&2
+    echo -e "  3) Anthropic - Direct Claude API" >&2
     echo -e "  4) DeepSeek - Chinese models" >&2
     echo -e "  5) Groq - Fast inference" >&2
-    echo -e "  6) Custom - OpenAI-compatible - Local endpoints/customizados" >&2
+    echo -e "  6) Custom - OpenAI-compatible - Local/custom endpoints" >&2
     echo >&2
     read -p "Choose provider [1]: " provider_choice
 
@@ -690,7 +690,7 @@ select_provider_model() {
     local default_model="$2"
     
     echo >&2
-    echo -e "Modelos para $provider:" >&2
+    echo -e "Models for $provider:" >&2
     local models=()
     local i=1
     while IFS= read -r model; do
@@ -702,7 +702,7 @@ select_provider_model() {
         fi
         ((i++))
     done < <(get_provider_models_list "$provider")
-    echo -e "  $i) Outro modelo" >&2
+    echo -e "  $i) Other model" >&2
     echo >&2
     read -p "Choose model [1]: " model_choice
 
@@ -710,7 +710,7 @@ select_provider_model() {
     local choice_num=${model_choice:-1}
     
     if [[ "$choice_num" -eq $i ]]; then
-        read -p "Modelo personalizado: " selected_model
+        read -p "Custom model: " selected_model
     elif [[ "$choice_num" -ge 1 && "$choice_num" -lt $i ]]; then
         selected_model="${models[$((choice_num-1))]}"
     fi
@@ -719,7 +719,7 @@ select_provider_model() {
 }
 
 # ============================================================
-# Funções de Instância Docker
+# Docker Instance Functions
 # ============================================================
 
 create_docker_instance() {
@@ -749,11 +749,11 @@ create_docker_instance() {
         *) channel="whatsapp" ;;
     esac
 
-    # Selecionar provider LLM
+    # Select LLM provider
     local provider
     provider=$(select_llm_provider)
     
-    # Solicitar chave API apropriada para o provider
+    # Request appropriate API key for provider
     local env_key
     env_key=$(get_provider_env_key "$provider")
     local api_key
@@ -777,22 +777,22 @@ create_docker_instance() {
             ;;
         custom)
             read -p "API key: " api_key
-            read -p "URL base da API (ex: http://localhost:8000/v1): " api_base
+            read -p "API base URL (ex: http://localhost:8000/v1): " api_base
             ;;
     esac
 
-    # Selecionar modelo
+    # Select model
     local default_model
     default_model=$(get_provider_default_model "$provider")
     local model
     model=$(select_provider_model "$provider" "$default_model")
 
     read -p "External port (ex: 18791, 18792): " port
-    read -p "ID do usuário para allowFrom: " user_id
+    read -p "User ID for allowFrom: " user_id
     
     local instance_dir="${NANOBOT_INSTANCES}/${instance_name}"
     
-    # Criar diretório da instance
+    # Create instance directory
     mkdir -p "$instance_dir"
     
     # Criar config.json (as per guide)
@@ -803,12 +803,12 @@ create_docker_instance() {
     
     print_success "Instance $instance_name created in $instance_dir!"
     print_info "Configuration:"
-    echo "  - Provedor: $provider"
-    echo "  - Modelo: $model"
-    echo "  - Canal: $channel"
-    echo "  - Porta: $port"
+    echo "  - Provider: $provider"
+    echo "  - Model: $model"
+    echo "  - Channel: $channel"
+    echo "  - Port: $port"
     echo
-    print_info "Estrutura criada:"
+    print_info "Structure created:"
     echo "  - config.json"
     echo "  - docker-compose.yml"
     
@@ -959,7 +959,7 @@ create_multi_instances() {
     print_step "Multi-instance creator (as per guide)..."
     
     read -p "How many instances to create? " num_instances
-    read -p "Prefixo do nome (ex: wa, tg): " prefix
+    read -p "Name prefix (ex: wa, tg): " prefix
 
     echo
     echo "Available channels:"
@@ -982,13 +982,13 @@ create_multi_instances() {
         *) channel="whatsapp" ;;
     esac
 
-    read -p "Porta inicial (ex: 18791): " start_port
+    read -p "Initial port (ex: 18791): " start_port
     
-    # Selecionar provider LLM
+    # Select LLM provider
     local provider
     provider=$(select_llm_provider)
     
-    # Solicitar chave API apropriada
+    # Request appropriate API key
     local api_key api_base=""
     case $provider in
         openrouter)
@@ -1008,11 +1008,11 @@ create_multi_instances() {
             ;;
         custom)
             read -p "API key: " api_key
-            read -p "URL base da API (ex: http://localhost:8000/v1): " api_base
+            read -p "API base URL (ex: http://localhost:8000/v1): " api_base
             ;;
     esac
 
-    # Selecionar modelo
+    # Select model
     local default_model
     default_model=$(get_provider_default_model "$provider")
     local model
@@ -1024,20 +1024,20 @@ create_multi_instances() {
         local user_id="YOUR_USER_ID_${i}"
         
         echo
-        print_step "Creating instance $instance_name (porta: $port, provider: $provider, modelo: $model)..."
+        print_step "Creating instance $instance_name (port: $port, provider: $provider, model: $model)..."
         create_docker_instance_single "$instance_name" "$channel" "$port" "$api_key" "$user_id" "$model" "$provider" "$api_base"
     done
     
     print_success "All instances created!"
     print_info "Configuration:"
-    echo "  - Provedor: $provider"
-    echo "  - Modelo: $model"
-    echo "  - Canal: $channel"
+    echo "  - Provider: $provider"
+    echo "  - Model: $model"
+    echo "  - Channel: $channel"
     echo
     print_info "Next steps:"
     echo "1. For each WhatsApp instance, execute:"
     echo "   $SCRIPT_NAME login ${prefix}1"
-    echo "2. Inicie todas:"
+    echo "2. Start all:"
     echo "   $SCRIPT_NAME start-all"
     echo "3. To change provider/model:"
     echo "   $SCRIPT_NAME configure"
@@ -1153,7 +1153,7 @@ manage_instance() {
             docker compose up -d
             ;;
         *)
-            print_error "Ação desconhecida: $action"
+            print_error "Unknown action: $action"
             ;;
     esac
     
@@ -1260,28 +1260,28 @@ print(c.get('agents',{}).get('defaults',{}).get('model','?'))
     
     echo
     echo -e "${YELLOW}━━━ Instance to delete ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "  Nome:     ${CYAN}$instance_name${NC}"
-    echo -e "  Canal:    $ch"
-    echo -e "  Modelo:   $model"
-    echo -e "  Pasta:    $instance_dir"
+    echo -e "  Name:     ${CYAN}$instance_name${NC}"
+    echo -e "  Channel:  $ch"
+    echo -e "  Model:    $model"
+    echo -e "  Folder:   $instance_dir"
     echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo
     echo -e "${RED}This action is IRREVERSIBLE!${NC}"
-    echo -e "${RED}Será removido:${NC}"
+    echo -e "${RED}Will be removed:${NC}"
     echo "  - Docker Container - nanobot-$instance_name"
-    echo "  - Todas as pastas da instance"
+    echo "  - All instance folders"
     echo "  - WhatsApp session data if any"
     echo
     
     # Offer backup
-    read -p "Fazer backup do config.json? (s/n) [s]: " do_backup
-    if [[ "${do_backup:-s}" == "s" || "${do_backup:-s}" == "S" ]]; then
+    read -p "Backup config.json? (y/n) [y]: " do_backup
+    if [[ "${do_backup:-y}" == "y" || "${do_backup:-y}" == "Y" ]]; then
         local backup_dir="${BACKUP_DIR}"
         local backup_name="${instance_name}_$(date +%Y%m%d_%H%M%S)"
         mkdir -p "$backup_dir/$backup_name"
         cp "$instance_dir/config.json" "$backup_dir/$backup_name/"
         cp "$instance_dir/docker-compose.yml" "$backup_dir/$backup_name/" 2>/dev/null || true
-        print_success "Backup salvo em: $backup_dir/$backup_name/"
+        print_success "Backup saved to: $backup_dir/$backup_name/"
         echo
     fi
     
@@ -1325,7 +1325,7 @@ update_nanobot() {
     print_header
     print_step "Updating nanobot..."
     
-    echo "Como você instalou o nanobot?"
+    echo "How did you install nanobot?"
     echo "1) pip"
     echo "2) uv"
     echo "3) Source code"
@@ -1349,7 +1349,7 @@ update_nanobot() {
                 pip3 install -e .
                 cd - > /dev/null 2>&1
             else
-                print_warning "Repositório nanobot not found no diretório atual."
+                print_warning "nanobot repository not found in current directory."
                 print_info "Re-cloning..."
                 install_nanobot_source
             fi
@@ -1359,15 +1359,15 @@ update_nanobot() {
             ;;
     esac
     
-    print_success "nanobot atualizado!"
+    print_success "nanobot updated!"
     nanobot --version
 }
 
 rebuild_docker_image() {
     print_header
-    print_step "Rebuilding image Docker do nanobot (as per guide)..."
+    print_step "Rebuilding Docker image for nanobot (as per guide)..."
     
-    # Clonar ou atualizar repositório
+    # Clone or update repository
     if [[ ! -d "$NANOBOT_SOURCE_DIR" ]]; then
         print_step "Cloning repository..."
         git clone "$NANOBOT_REPO" "$NANOBOT_SOURCE_DIR"
@@ -1376,16 +1376,16 @@ rebuild_docker_image() {
         cd "$NANOBOT_SOURCE_DIR" && git pull && cd -
     fi
     
-    # Aplicar patch de áudio se habilitado
+    # Apply audio patch if enabled
     if [[ "$PATCH_WHATSAPP_AUDIO" == "true" ]]; then
         apply_audio_patch "$NANOBOT_SOURCE_DIR"
     fi
-    
+
     cd "$NANOBOT_SOURCE_DIR"
     docker build -t nanobot .
     cd - > /dev/null 2>&1
     
-    print_success "Imagem Docker reconstruída!"
+    print_success "Docker image rebuilt!"
     print_info "To update instances, execute: $SCRIPT_NAME update-all"
 }
 
@@ -1417,12 +1417,12 @@ whatsapp_login_flow() {
     echo
     print_step "Starting WhatsApp login..."
     echo
-    echo -e "${YELLOW}  1. QR Code vai aparecer abaixo${NC}"
-    echo -e "${YELLOW}  2. Abra WhatsApp → Dispositivos vinculados → Vincular dispositivo${NC}"
+    echo -e "${YELLOW}  1. QR Code will appear below${NC}"
+    echo -e "${YELLOW}  2. Open WhatsApp → Linked Devices → Link Device${NC}"
     echo -e "${YELLOW}  3. Scan the QR Code${NC}"
     echo -e "${YELLOW}  4. When you see Connected, press Ctrl+C${NC}"
     echo
-    read -p "  Pressione Enter para começar..."
+    read -p "  Press Enter to start..."
 
     # Interactive login — all volumes mounted, no docker cp
     # || true needed: Ctrl+C makes docker run exit 130, which kills the script with set -e
@@ -1436,7 +1436,7 @@ whatsapp_login_flow() {
 
     # Check if login was successful
     if [[ -d whatsapp-auth ]] && [[ "$(ls -A whatsapp-auth 2>/dev/null)" ]]; then
-        print_success "WhatsApp conectado! Sessão salva."
+        print_success "WhatsApp connected! Session saved."
     else
         print_warning "Session not detected in whatsapp-auth/. Login may have failed."
     fi
@@ -1453,7 +1453,7 @@ reconnect_whatsapp() {
         return 1
     fi
     
-    print_step "Reconnecting WhatsApp para $instance_name..."
+    print_step "Reconnecting WhatsApp for $instance_name..."
     
     cd "$instance_dir"
     docker compose down 2>/dev/null || true
@@ -1471,7 +1471,7 @@ reconnect_whatsapp() {
     docker compose up -d
     cd - > /dev/null 2>&1
     
-    print_success "WhatsApp reconectado para $instance_name!"
+    print_success "WhatsApp reconnected for $instance_name!"
 }
 
 upgrade_whatsapp_bridge() {
@@ -1483,7 +1483,7 @@ upgrade_whatsapp_bridge() {
         return 1
     fi
 
-    print_step "Updating WhatsApp bridge para $instance_name..."
+    print_step "Updating WhatsApp bridge for $instance_name..."
 
     cd "$instance_dir"
     docker compose down 2>/dev/null || true
@@ -1500,7 +1500,7 @@ upgrade_whatsapp_bridge() {
     docker compose up -d
     cd - > /dev/null 2>&1
 
-    print_success "Bridge WhatsApp atualizado e instance reiniciada!"
+    print_success "WhatsApp bridge updated and instance restarted!"
 }
 
 configure_whatsapp_instance() {
@@ -1534,7 +1534,7 @@ print('whatsapp' if 'whatsapp' in channels else (list(channels.keys())[0] if cha
     fi
 
     print_header
-    print_step "Configuring WhatsApp para $instance_name..."
+    print_step "Configuring WhatsApp for $instance_name..."
     echo
 
     # Read current configuration
@@ -1552,7 +1552,7 @@ print(f'{enabled} {af_str} {gp}')
 ")
 
     echo -e "${CYAN}Current configuration:${NC}"
-    echo "  Habilitado: $current_enabled"
+    echo "  Enabled: $current_enabled"
     echo "  allowFrom: $current_allow_from"
     echo "  groupPolicy: $current_group_policy"
     echo
@@ -1565,11 +1565,11 @@ print(f'{enabled} {af_str} {gp}')
     echo "  [5] Enable / Disable channel"
     echo "  [6] Show current config.json"
     echo "  [7] Edit config.json manually - nano"
-    echo "  [0] Voltar"
+    echo "  [0] Back"
     echo
 
     while true; do
-        read -p "Escolha [0-7]: " wa_choice
+        read -p "Choose [0-7]: " wa_choice
         case ${wa_choice:-0} in
             1)
                 python3 -c "
@@ -1584,7 +1584,7 @@ with open('$config_file', 'w') as f:
                 ;;
             2)
                 echo "Enter numbers separated by comma:"
-                read -p "Números: " numbers
+                read -p "Numbers: " numbers
                 if [[ -n "$numbers" ]]; then
                     python3 << PYEOF
 import json
@@ -1618,7 +1618,7 @@ cfg.setdefault('channels', {}).setdefault('whatsapp', {})['groupPolicy'] = 'open
 with open('$config_file', 'w') as f:
     json.dump(cfg, f, indent=2)
 "
-                print_success "groupPolicy = open (responde a todas as mensagens de grupo)"
+                print_success "groupPolicy = open (replies to all group messages)"
                 ;;
             5)
                 local new_enabled
@@ -1633,7 +1633,7 @@ with open('$config_file', 'w') as f:
     json.dump(cfg, f, indent=2)
 print(str(not current).lower())
 ")
-                print_success "Canal enabled = $new_enabled"
+                print_success "Channel enabled = $new_enabled"
                 ;;
             6)
                 echo
@@ -1655,8 +1655,8 @@ print(str(not current).lower())
                 running=$(docker ps --filter "name=nanobot-${instance_name}" --format "{{.Names}}" 2>/dev/null)
                 if [[ -n "$running" ]]; then
                     echo
-                    read -p "Restart instance para aplicar mudanças? (s/n): " restart_confirm
-                    if [[ "$restart_confirm" == "s" || "$restart_confirm" == "S" ]]; then
+                    read -p "Restart instance to apply changes? (y/n): " restart_confirm
+                    if [[ "$restart_confirm" == "y" || "$restart_confirm" == "Y" ]]; then
                         cd "$instance_dir"
                         docker compose restart
                         cd - > /dev/null 2>&1
@@ -1707,7 +1707,7 @@ valid_channels = ['whatsapp', 'telegram', 'discord', 'feishu', 'slack', 'matrix'
 with open('$cfg') as f:
     c = json.load(f)
 chs = [k for k in valid_channels if c.get('channels', {}).get(k, {}).get('enabled', False)]
-print(chs[0] if chs else 'desconhecido')
+print(chs[0] if chs else 'unknown')
 " 2>/dev/null)
         local model
         model=$(python3 -c "
@@ -1767,11 +1767,11 @@ with open('$cfg') as f:
 print(c.get('channels',{}).get('$channel',{}).get('groupPolicy','mention'))
 " 2>/dev/null)
 
-    echo -e "${CYAN}Canal: $channel${NC}"
+    echo -e "${CYAN}Channel: $channel${NC}"
     echo "  allowFrom: $allow_from_str"
     echo "  groupPolicy: $group_policy"
     
-    # Obter provider e modelo atuais
+    # Get current provider and model
     local model_now provider_now
     model_now=$(python3 -c "
 import json
@@ -1791,20 +1791,20 @@ print(c.get('agents',{}).get('defaults',{}).get('provider','auto'))
     echo
 
     echo -e "${GREEN}━━━ Configure $channel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo "  [1] allowFrom: permitir qualquer pessoa"
-    echo "  [2] allowFrom: definir IDs/números específicos"
+    echo "  [1] allowFrom: allow anyone"
+    echo "  [2] allowFrom: set specific IDs/numbers"
     echo "  [3] groupPolicy: mention - only when mentioned"
     echo "  [4] groupPolicy: open - reply all"
-    echo "  [5] Alterar modelo LLM"
-    echo "  [6] Alterar chave API"
-    echo "  [7] Alterar provider LLM"
+    echo "  [5] Change LLM model"
+    echo "  [6] Change API key"
+    echo "  [7] Change LLM provider"
     echo "  [8] Show full config.json"
     echo "  [9] Edit manually - nano"
-    echo "  [0] Voltar"
+    echo "  [0] Back"
     echo
 
     while true; do
-        read -p "Escolha [0-9]: " cfg_choice
+        read -p "Choose [0-9]: " cfg_choice
         case ${cfg_choice:-0} in
             1)
                 python3 << PYEOF
@@ -1829,7 +1829,7 @@ c["channels"]["$channel"]["allowFrom"] = nums
 with open("$cfg", "w") as f:
     json.dump(c, f, indent=2)
 PYEOF
-                    print_success "allowFrom atualizado"
+                    print_success "allowFrom updated"
                 fi
                 ;;
             3)
@@ -1855,7 +1855,7 @@ PYEOF
                 print_success "groupPolicy = open"
                 ;;
             5)
-                # Obter modelo atual para destacar
+                # Get current model to highlight
                 local current_model
                 current_model=$(python3 -c "
 import json
@@ -1864,25 +1864,25 @@ with open('$cfg') as f:
 print(c.get('agents',{}).get('defaults',{}).get('model',''))
 " 2>/dev/null)
                 
-                echo "Modelos para $provider_now:"
+                echo "Models for $provider_now:"
                 local models=()
                 local i=1
                 while IFS= read -r model; do
                     models+=("$model")
                     if [[ "$model" == "$current_model" ]]; then
-                        echo "  ${GREEN}$i) $model (atual)${NC}"
+                        echo "  ${GREEN}$i) $model (current)${NC}"
                     else
                         echo "  $i) $model"
                     fi
                     ((i++))
                 done < <(get_provider_models_list "$provider_now")
-                echo "  $i) Outro modelo"
-                read -p "Escolha [1-$i]: " mc
+                echo "  $i) Other model"
+                read -p "Choose [1-$i]: " mc
                 local new_model="$current_model"
                 local choice_num=${mc:-1}
                 
                 if [[ "$choice_num" -eq $i ]]; then
-                    read -p "Modelo personalizado: " new_model
+                    read -p "Custom model: " new_model
                 elif [[ "$choice_num" -ge 1 && "$choice_num" -lt $i ]]; then
                     new_model="${models[$((choice_num-1))]}"
                 fi
@@ -1896,7 +1896,7 @@ c.setdefault("agents",{}).setdefault("defaults",{})["model"] = "$new_model"
 with open("$cfg", "w") as f:
     json.dump(c, f, indent=2)
 PYEOF
-                    print_success "Modelo alterado para $new_model"
+                    print_success "Model changed to $new_model"
                 fi
                 ;;
             6)
@@ -1904,12 +1904,12 @@ PYEOF
                 env_key=$(get_provider_env_key "$provider_now")
                 echo "Current provider: $provider_now"
                 echo "Environment variable: $env_key"
-                read -p "Nova chave API: " new_key
+                read -p "New API key: " new_key
                 if [[ -n "$new_key" ]]; then
-                    # Determinar qual provider section atualizar
+                    # Determine which provider section to update
                     local provider_key="$provider_now"
                     if [[ "$provider_now" == "auto" ]]; then
-                        provider_key="openai"  # Custom endpoints usam openai compat
+                        provider_key="openai"  # Custom endpoints use openai compat
                     fi
                     
                     python3 << PYEOF
@@ -1920,17 +1920,17 @@ c.setdefault("providers",{}).setdefault("$provider_key",{})["apiKey"] = "$new_ke
 with open("$cfg", "w") as f:
     json.dump(c, f, indent=2)
 PYEOF
-                    print_success "Chave API atualizada"
+                    print_success "API key updated"
                 fi
                 ;;
             7)
-                # Alterar provider LLM
+                # Change LLM provider
                 echo
-                print_step "Alterando provider LLM..."
+                print_step "Changing LLM provider..."
                 local new_provider
                 new_provider=$(select_llm_provider)
                 
-                # Solicitar nova chave API
+                # Request new API key
                 local new_api_key new_api_base=""
                 case $new_provider in
                     openrouter)
@@ -1950,22 +1950,22 @@ PYEOF
                         ;;
                     custom)
                         read -p "API key: " new_api_key
-                        read -p "URL base da API (ex: http://localhost:8000/v1): " new_api_base
+                        read -p "API base URL (ex: http://localhost:8000/v1): " new_api_base
                         ;;
                 esac
                 
-                # Selecionar novo modelo
+                # Select new model
                 local default_model new_model
                 default_model=$(get_provider_default_model "$new_provider")
                 new_model=$(select_provider_model "$new_provider" "$default_model")
                 
-                # Atualizar config.json
+                # Update config.json
                 python3 << PYEOF
 import json
 with open("$cfg", "r") as f:
     c = json.load(f)
 
-# Limpar providers antigos e adicionar novo
+# Clear old providers and add new one
 providers = {}
 provider_key = "$new_provider"
 if provider_key == "custom":
@@ -1979,7 +1979,7 @@ else:
 
 c["providers"] = providers
 
-# Atualizar agent defaults
+# Update agent defaults
 provider_value = "$new_provider"
 if provider_value == "custom":
     provider_value = "auto"
@@ -1990,7 +1990,7 @@ c["agents"]["defaults"]["model"] = "$new_model"
 with open("$cfg", "w") as f:
     json.dump(c, f, indent=2)
 PYEOF
-                print_success "Provider changed to $new_provider com modelo $new_model"
+                print_success "Provider changed to $new_provider with model $new_model"
                 ;;
             8)
                 echo
@@ -2003,16 +2003,16 @@ PYEOF
                 elif command -v vim &> /dev/null; then
                     vim "$cfg"
                 else
-                    print_warning "Edite manualmente: $cfg"
+                    print_warning "Edit manually: $cfg"
                 fi
                 ;;
             0)
-                # Perguntar se reinicia
+                # Ask to restart
                 local running
                 running=$(docker ps --filter "name=nanobot-${selected}" --format "{{.Names}}" 2>/dev/null)
                 if [[ -n "$running" ]]; then
-                    read -p "Restart para aplicar? (s/n): " rc
-                    if [[ "$rc" == "s" || "$rc" == "S" ]]; then
+                    read -p "Restart to apply? (y/n): " rc
+                    if [[ "$rc" == "y" || "$rc" == "Y" ]]; then
                         cd "${NANOBOT_INSTANCES}/${selected}"
                         docker compose restart
                         cd - > /dev/null 2>&1
@@ -2053,10 +2053,9 @@ show_menu() {
     echo
     echo -e "  ${PURPLE}⚡ Configuration${NC}"
     echo -e "    ${YELLOW}[1]${NC} Setup All  ${YELLOW}[2]${NC} Prerequisites  ${YELLOW}[3]${NC} Build Image"
-    echo -e "    ${YELLOW}[1]${NC} Setup All  ${YELLOW}[2]${NC} Prerequisites  ${YELLOW}[3]${NC} Build Image"
     echo
     echo -e "  ${CYAN}📦 Instances${NC}"
-    echo -e "    ${CYAN}[4]${NC} Criar  ${CYAN}[5]${NC} Create Multiple  ${CYAN}[6]${NC} List"
+    echo -e "    ${CYAN}[4]${NC} Create  ${CYAN}[5]${NC} Create Multiple  ${CYAN}[6]${NC} List"
     echo
     echo -e "  ${GREEN}🎮 Control${NC}"
     echo -e "    ${GREEN}[7]${NC} Start  ${RED}[8]${NC} Stop  ${BLUE}[9]${NC} Restart"
@@ -2067,15 +2066,16 @@ show_menu() {
     echo -e "    ${CYAN}[16]${NC} Configure"
     echo
     echo -e "  ${BLUE}🔄 Batch${NC}"
-    echo -e "    ${GREEN}[17]${NC} Start Todas  ${RED}[18]${NC} Stop Todas"
-    echo -e "    ${BLUE}[19]${NC} Restart Todas  ${YELLOW}[20]${NC} Update All"
+    echo -e "    ${GREEN}[17]${NC} Start All  ${RED}[18]${NC} Stop All"
+    echo -e "    ${BLUE}[19]${NC} Restart All  ${YELLOW}[20]${NC} Update All"
     echo
     echo -e "  ${PURPLE}🔧 System${NC}"
     echo -e "    ${PURPLE}[21]${NC} Update Nanobot  ${PURPLE}[22]${NC} Rebuild Image"
     echo -e "    ${CYAN}[23]${NC} Config Instance  ${CYAN}[24]${NC} Help"
     echo
     echo -e "  ${RED}⚠️  Danger${NC}"
-    echo -e "    ${RED}[25]${NC} Delete Instance (IRREVERSIBLE)
+    echo -e "    ${RED}[25]${NC} Delete Instance (IRREVERSIBLE)"
+    echo
     echo
     echo -e "    ${RED}[0]${NC} Exit"
     echo
@@ -2085,9 +2085,9 @@ select_instance() {
     local action="$1"
     local instances=()
     
-    # List instances disponíveis
+    # List available instances
     if [[ ! -d "$NANOBOT_INSTANCES" ]]; then
-        print_error "No instances found. Crie uma instance primeiro."
+        print_error "No instances found. Create an instance first."
         return 1
     fi
     
@@ -2098,7 +2098,7 @@ select_instance() {
     done
     
     if [[ ${#instances[@]} -eq 0 ]]; then
-        print_error "No instances found. Crie uma instance primeiro."
+        print_error "No instances found. Create an instance first."
         return 1
     fi
     
@@ -2140,7 +2140,7 @@ select_instance() {
 interactive_menu() {
     declare -A instance_map
     
-    # Mensagem de boas-vindas
+    # Welcome message
     clear
     echo -e "${PURPLE}══════════════════════════════════════════════════════════════════${NC}"
     echo -e "${PURPLE}                    🐈 Nanobot Helper v1.0${NC}"
@@ -2237,11 +2237,11 @@ interactive_menu() {
                 ;;
             0)
                 echo
-                print_info "Saindo do Nanobot Helper. Até logo! 🐈"
+                print_info "Exiting Nanobot Helper. Goodbye! 🐈"
                 exit 0
                 ;;
             *)
-                print_error "Invalid option. Escolha um número de 0 a 25."
+                print_error "Invalid option. Choose a number from 0 to 25."
                 ;;
         esac
         
@@ -2284,21 +2284,21 @@ show_help() {
     echo "  upgrade-bridge <name> - Update WhatsApp bridge - rebuild with latest lib"
     echo "  configure-wa <name>   - Configure WhatsApp - allowFrom, groupPolicy, etc"
     echo
-    echo "Gerenciamento em Lote:"
-    echo "  start-all        - Start todas as instances"
-    echo "  stop-all         - Stop todas as instances"
-    echo "  restart-all      - Restart todas as instances"
-    echo "  update-all       - Atualizar todas as instances"
+    echo "Batch Management:"
+    echo "  start-all        - Start all instances"
+    echo "  stop-all         - Stop all instances"
+    echo "  restart-all      - Restart all instances"
+    echo "  update-all       - Update all instances"
     echo
     echo "Update:"
     echo "  update           - Update nanobot - pip or uv"
     echo "  rebuild          - Reconstruir imagem Docker"
     echo
-    echo "Utilidades:"
+    echo "Utilities:"
     echo "  install          - Install nanobot - pip, uv, or source"
     echo "  setup            - Initial setup - onboard"
     echo "  configure        - Configure instance - select and edit"
-    echo "  interactive      - Modo interativo"
+    echo "  interactive      - Interactive mode"
     echo "  help             - Show help"
     echo
     echo "Supported LLM Providers:"
@@ -2311,15 +2311,15 @@ show_help() {
     echo
     echo "Examples - as per guide:"
     echo "  $0 setup-guide               # Setup complete"
-    echo "  $0 create                    # Create instance com seleção de provider"
-    echo "  $0 configure                 # Alterar provider/modelo de instance existente"
-    echo "  $0 login wa1                 # Conectar WhatsApp"
+    echo "  $0 create                    # Create instance with provider selection"
+    echo "  $0 configure                 # Change provider/model of existing instance"
+    echo "  $0 login wa1                 # Connect WhatsApp"
     echo "  $0 start wa1                 # Start instance"
-    echo "  $0 logs wa1                  # Ver logs"
+    echo "  $0 logs wa1                  # View logs"
     echo "  $0 reconnect wa1             # Reconnect WhatsApp"
     echo "  $0 upgrade-bridge wa1        # Update WhatsApp bridge"
     echo "  $0 configure-wa wa1          # Configure WhatsApp (allowFrom, groups)"
-    echo "  $0 delete wa1                # Deletar instance (com confirmação)"
+    echo "  $0 delete wa1                # Delete instance (with confirmation)"
     echo
 }
 
@@ -2357,70 +2357,70 @@ main() {
             ;;
         start)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance start "$2"
             ;;
         stop)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance stop "$2"
             ;;
         restart)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance restart "$2"
             ;;
         logs)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance logs "$2"
             ;;
         status)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance status "$2"
             ;;
         chat)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance chat "$2"
             ;;
         login)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             manage_instance login-whatsapp "$2"
             ;;
         reconnect)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             reconnect_whatsapp "$2"
             ;;
         upgrade-bridge)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             upgrade_whatsapp_bridge "$2"
             ;;
         configure-wa)
             if [[ -z "${2:-}" ]]; then
-                print_error "Especifique o nome da instance"
+                print_error "Specify the instance name"
                 exit 1
             fi
             configure_whatsapp_instance "$2"
@@ -2459,16 +2459,16 @@ main() {
             show_help
             ;;
         *)
-            print_error "Comando desconhecido: $command"
+            print_error "Unknown command: $command"
             show_help
             exit 1
             ;;
     esac
 }
 
-# Executar main se o script for chamado diretamente
+# Execute main if script is called directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # Se sem argumentos, iniciar menu interativo
+    # If no arguments, start interactive menu
     if [[ $# -eq 0 ]]; then
         interactive_menu
     else
