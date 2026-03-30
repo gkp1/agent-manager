@@ -2,8 +2,8 @@
   "agents": {
     "defaults": {
       "workspace": "~/.nanobot/workspace",
-      "model": "gpt-4o",
-      "provider": "openai",
+      "model": "stepfun/step-3.5-flash:free",
+      "provider": "openrouter",
       "maxTokens": 8192,
       "contextWindowTokens": 65536,
       "temperature": 0.1,
@@ -58,7 +58,7 @@
       "extraHeaders": null
     },
     "openrouter": {
-      "apiKey": "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",
+      "apiKey": "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",
       "apiBase": null,
       "extraHeaders": null
     },

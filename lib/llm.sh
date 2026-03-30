@@ -594,11 +594,14 @@ select_llm_provider_interactive() {
 select_model_interactive() {
     local provider="$1"
     local current_model="${2:-}"
+    local model_choice=""
+    local selected_model=""
+    local choice_num=1
+    local i=1
+    local models=()
     
     echo >&2
     echo -e "Models for $provider:" >&2
-    local models=()
-    local i=1
     while IFS= read -r model; do
         models+=("$model")
         if [[ "$model" == "$current_model" ]]; then
@@ -612,8 +615,8 @@ select_model_interactive() {
     echo >&2
     read -p "Choose model [1]: " model_choice
 
-    local selected_model="$current_model"
-    local choice_num=${model_choice:-1}
+    choice_num=${model_choice:-1}
+    selected_model="$current_model"
     
     if [[ "$choice_num" -eq $i ]]; then
         read -p "Custom model: " selected_model
@@ -621,6 +624,8 @@ select_model_interactive() {
         selected_model="${models[$((choice_num-1))]}"
     fi
     
-    [[ -z "$selected_model" ]] && selected_model=$(get_provider_default_model "$provider")
+    if [[ -z "$selected_model" ]]; then
+        selected_model=$(get_provider_default_model "$provider")
+    fi
     echo "$selected_model"
 }
