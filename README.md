@@ -98,7 +98,7 @@ You can set a global LLM provider/model that all agents inherit, or override per
         └── anthropic: { apiKey: "sk-ant-..." }
 ```
 
-Commands:
+Commands: (command flags purely for script usage, all of this is configurable interactively via the main script menu :)
 ```bash
 ./xnanobot.sh global-set           # Set global provider + model + API key
 ./xnanobot.sh global-show         # Show global config
