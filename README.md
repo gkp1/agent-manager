@@ -15,21 +15,36 @@ AI Manager runs your AI agents in isolated Docker containers. Each agent gets it
 │   ├── wa1/                             # Agent 1: WhatsApp
 │   │   ├── config.json                  # wa1's LLM + channel config
 │   │   ├── docker-compose.yml           # wa1's isolated container
-│   │   ├── bridge/                      # wa1's WhatsApp bridge
+│   │   ├── bridge/                     # wa1's WhatsApp bridge
+│   │   │   ├── src/
+│   │   │   ├── dist/
+│   │   │   └── package.json
 │   │   ├── workspace/                   # wa1's memory & files
-│   │   └── whatsapp-auth/               # wa1's WhatsApp session
+│   │   │   ├── AGENTS.md
+│   │   │   ├── TOOLS.md
+│   │   │   ├── USER.md
+│   │   │   ├── memory/
+│   │   │   │   ├── MEMORY.md
+│   │   │   │   └── HISTORY.md
+│   │   │   └── heartbeat.json
+│   │   └── whatsapp-auth/              # wa1's WhatsApp session
+│   │       ├── creds.json
+│   │       └── session.json
 │   │
 │   ├── wa2/                             # Agent 2: WhatsApp (different number)
 │   │   ├── config.json                  # Can use DIFFERENT LLM provider!
 │   │   ├── docker-compose.yml
 │   │   ├── bridge/
-│   │   ├── workspace/
-│   │   └── whatsapp-auth/
+│   │   ├── workspace/                    # wa2's SEPARATE memory
+│   │   └── whatsapp-auth/               # wa2's SEPARATE session
 │   │
 │   ├── tg1/                             # Agent 3: Telegram
 │   │   ├── config.json                  # Telegram bot config
 │   │   ├── docker-compose.yml
 │   │   └── workspace/
+│   │       ├── AGENTS.md
+│   │       ├── TOOLS.md
+│   │       └── memory/
 │   │
 │   └── discord1/                        # Agent 4: Discord
 │       ├── config.json
@@ -37,7 +52,13 @@ AI Manager runs your AI agents in isolated Docker containers. Each agent gets it
 │       └── workspace/
 │
 ├── nanobot-source/                      # Nanobot source code
+│   ├── bridge/
+│   ├── src/
+│   └── Dockerfile
 └── backups/                             # Instance backups
+    └── wa1_20240330_120000/
+        ├── config.json
+        └── docker-compose.yml
 ```
 
 **Key Points:**
@@ -45,6 +66,45 @@ AI Manager runs your AI agents in isolated Docker containers. Each agent gets it
 - Different agents can use different LLM providers/models
 - Global LLM settings can be applied to all agents, or each can have its own
 - WhatsApp, Telegram, Discord, Feishu, Slack, Matrix, Email — mix and match
+- Each workspace has its own memory, history, and state
+
+### Workspace Contents (per agent)
+
+Each agent's `workspace/` folder contains:
+```
+workspace/
+├── AGENTS.md         # Agent personality & instructions
+├── TOOLS.md          # Available tools for this agent
+├── USER.md           # User context
+├── HEARTBEAT.md       # Heartbeat config
+├── memory/
+│   ├── MEMORY.md     # Long-term memory
+│   └── HISTORY.md    # Conversation history
+└── heartbeat.json    # Heartbeat state
+```
+
+### Global LLM Configuration
+
+You can set a global LLM provider/model that all agents inherit, or override per-agent:
+
+```
+~/.nanobot/
+└── global-config.json        # Global settings (optional)
+    ├── global:
+    │   ├── provider: "openrouter"
+    │   └── model: "x-ai/grok-4.1-fast"
+    └── providers:
+        ├── openrouter: { apiKey: "sk-or-v1-..." }
+        └── anthropic: { apiKey: "sk-ant-..." }
+```
+
+Commands:
+```bash
+./xnanobot.sh global-set           # Set global provider + model + API key
+./xnanobot.sh global-show         # Show global config
+./xnanobot.sh instance-model wa1  # Override for specific agent
+./xnanobot.sh instance-reset wa1   # Reset wa1 to use global
+```
 
 ### The Problem
 
