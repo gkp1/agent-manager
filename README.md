@@ -2,7 +2,10 @@
 
 **AI agents, minus the complexity.**
 
-<img width="488" height="691" alt="image" src="https://github.com/user-attachments/assets/9bbce13d-8584-403c-926b-6d14b05b78b0" />
+<img width="435" height="195" alt="image" src="https://github.com/user-attachments/assets/4253fa4e-5dec-43f6-93a4-b0c04ed2f20d" />
+
+<img width="417" height="194" alt="image" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" />
+
 
 Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
 
