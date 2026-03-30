@@ -2,7 +2,7 @@
 
 **AI agents, minus the complexity.**
 
-<img width="435" height="195" alt="image" src="https://github.com/user-attachments/assets/4253fa4e-5dec-43f6-93a4-b0c04ed2f20d" />
+<img width="423" height="573" alt="image" src="https://github.com/user-attachments/assets/e6b633ec-fca0-4bfd-8a28-1407a7600595" />
 
 <img width="417" height="194" alt="image" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" />
 
