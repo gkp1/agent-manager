@@ -1,6 +1,12 @@
 # 🐈 AI Manager
 
-Multi-agent manager for [Nanobot](https://github.com/HKUDS/nanobot) instances with Docker isolation, WhatsApp audio support, and multi-provider LLM configuration.
+**Tired of complex AI agent setups?**
+
+Running 100 commands just to configure a simple AI agent? Want 2 isolated agents (or more) but don't want to deal with environment conflicts, dependency hell, and manual configuration for every single one?
+
+**AI Manager fixes that.**
+
+One script. Interactive menu. Done. Create isolated AI agents in seconds - each with its own memory, channels, and LLM provider. WhatsApp, Telegram, Discord - all with a few keystrokes.
 
 ## ✨ Features
 
