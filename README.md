@@ -164,7 +164,7 @@ chmod +x xnanobot.sh
 ./xnanobot.sh
 
 # Add a global alias "xnano" or "xn" to run ~/aimanager/xnanobot.sh
-echo "alias xnano='bash ~/aimanager/xnanobot.sh'" >> ~/.bashrc && source ~/.bashrc
+"alias xnano='bash ~/aimanager/xnanobot.sh'" >> ~/.bashrc && source ~/.bashrc
 ```
 
 ### First Time Setup
