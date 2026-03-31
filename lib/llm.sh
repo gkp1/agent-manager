@@ -713,9 +713,9 @@ show_global_vector_config() {
     provider=$(get_global_vector_provider)
     model=$(get_global_vector_model)
     
-    echo "  Vector Memory: ${GREEN}$enabled${NC}"
-    echo "  Provider:      ${GREEN}$provider${NC}"
-    echo "  Model:         ${GREEN}$model${NC}"
+    echo "  Vector Memory: $enabled"
+    echo "  Provider:      $provider"
+    echo "  Model:         $model"
 }
 
 show_instance_vector_config() {
