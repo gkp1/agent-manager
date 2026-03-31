@@ -26,6 +26,8 @@ cmd_global_set() {
     print_success "Global config saved:"
     echo "  Provider: $provider"
     echo "  Model: $model"
+    echo
+    prompt_restart_all_instances
 }
 
 cmd_global_provider() {
@@ -44,6 +46,8 @@ cmd_global_provider() {
     set_global_provider "$provider"
     
     print_success "Global provider set to: $provider"
+    echo
+    prompt_restart_all_instances
 }
 
 cmd_global_model() {
@@ -64,6 +68,8 @@ cmd_global_model() {
     set_global_model "$model"
     
     print_success "Global model set to: $model"
+    echo
+    prompt_restart_all_instances
 }
 
 cmd_global_key() {
@@ -79,6 +85,8 @@ cmd_global_key() {
     elif [[ -n "$api_key" ]]; then
         set_global_api_key "$provider" "$api_key"
         print_success "API key set for: $provider"
+        echo
+        prompt_restart_all_instances
     else
         print_warning "No API key set"
     fi
@@ -91,6 +99,8 @@ cmd_global_show() {
 cmd_global_clear() {
     clear_global_config
     print_success "Global config cleared"
+    echo
+    prompt_restart_all_instances
 }
 
 cmd_instance_show() {
@@ -147,7 +157,8 @@ cmd_instance_model() {
     
     echo
     print_success "Instance $instance_name model set to: $new_model"
-    echo "Run ./xnanobot.sh instance-reset $instance_name to revert to global"
+    echo
+    prompt_restart_instance "$instance_name"
 }
 
 cmd_instance_provider() {
@@ -182,7 +193,8 @@ cmd_instance_provider() {
     
     echo
     print_success "Instance $instance_name provider set to: $new_provider"
-    echo "Run ./xnanobot.sh instance-reset $instance_name to revert to global"
+    echo
+    prompt_restart_instance "$instance_name"
 }
 
 cmd_instance_key() {
@@ -219,6 +231,9 @@ cmd_instance_key() {
         llm_instance_set_api_key "$instance_name" "$provider" "$new_key"
         print_success "Instance API key set (override)"
     fi
+    
+    echo
+    prompt_restart_instance "$instance_name"
 }
 
 cmd_instance_key_clear() {
@@ -235,6 +250,8 @@ cmd_instance_key_clear() {
     llm_instance_clear_api_key "$instance_name" "$provider"
     
     print_success "Instance $instance_name API key cleared - now using global"
+    echo
+    prompt_restart_instance "$instance_name"
 }
 
 cmd_instance_reset() {
@@ -271,4 +288,27 @@ cmd_instance_reset() {
     llm_instance_reset "$instance_name"
     
     print_success "Instance $instance_name reset to global config"
+    echo
+    prompt_restart_instance "$instance_name"
+}
+
+prompt_restart_all_instances() {
+    echo
+    echo -e "${YELLOW}All instances need to be restarted to apply changes.${NC}"
+    local confirm
+    read -r -p "Restart all instances now? (y/n): " confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        manage_all_instances restart
+    fi
+}
+
+prompt_restart_instance() {
+    local instance_name="$1"
+    echo
+    echo -e "${YELLOW}Instance $instance_name needs to be restarted to apply changes.${NC}"
+    local confirm
+    read -r -p "Restart instance now? (y/n): " confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        manage_instance restart "$instance_name"
+    fi
 }
