@@ -169,6 +169,10 @@ services:
       - ./whatsapp-auth:/root/.nanobot/whatsapp-auth
     ports:
       - "{PORT}:18790"
+    environment:
+      - NANOBOT_USE_VECTOR_MEMORY=${NANOBOT_USE_VECTOR_MEMORY:-false}
+      - NANOBOT_VECTOR_PROVIDER=${NANOBOT_VECTOR_PROVIDER:-sentence-transformers}
+      - NANOBOT_VECTOR_MODEL=${NANOBOT_VECTOR_MODEL:-paraphrase-multilingual-mpnet-base-v2}
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -188,6 +192,10 @@ services:
       - ./workspace:/root/.nanobot/workspace
     ports:
       - "${port}:18790"
+    environment:
+      - NANOBOT_USE_VECTOR_MEMORY=${NANOBOT_USE_VECTOR_MEMORY:-false}
+      - NANOBOT_VECTOR_PROVIDER=${NANOBOT_VECTOR_PROVIDER:-sentence-transformers}
+      - NANOBOT_VECTOR_MODEL=${NANOBOT_VECTOR_MODEL:-paraphrase-multilingual-mpnet-base-v2}
     command: ["gateway"]
 EOF
     fi

@@ -637,3 +637,243 @@ select_model_interactive() {
     fi
     echo "$selected_model"
 }
+
+# ==================== Vector Memory Functions ====================
+
+GLOBAL_VECTOR_CONFIG_FILE="${NANOBOT_HOME}/global-vector.json"
+
+set_global_vector_memory() {
+    local enabled="$1"
+    python3 -c "
+import json
+c = {}
+try:
+    with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'r') as f:
+        c = json.load(f)
+except: pass
+c['enabled'] = True if '$enabled' == 'true' else False
+with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'w') as f:
+    json.dump(c, f, indent=2)
+"
+}
+
+set_global_vector_model() {
+    local provider="$1"
+    local model="$2"
+    python3 -c "
+import json
+c = {}
+try:
+    with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'r') as f:
+        c = json.load(f)
+except: pass
+c['provider'] = '$provider'
+c['model'] = '$model'
+with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'w') as f:
+    json.dump(c, f, indent=2)
+"
+}
+
+get_global_vector_enabled() {
+    python3 -c "
+import json
+try:
+    with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'r') as f:
+        c = json.load(f)
+    print(c.get('enabled', False))
+except: print(False)
+"
+}
+
+get_global_vector_model() {
+    python3 -c "
+import json
+try:
+    with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'r') as f:
+        c = json.load(f)
+    print(c.get('model', 'paraphrase-multilingual-mpnet-base-v2'))
+except: print('paraphrase-multilingual-mpnet-base-v2')
+"
+}
+
+get_global_vector_provider() {
+    python3 -c "
+import json
+try:
+    with open('${GLOBAL_VECTOR_CONFIG_FILE}', 'r') as f:
+        c = json.load(f)
+    print(c.get('provider', 'sentence-transformers'))
+except: print('sentence-transformers')
+"
+}
+
+show_global_vector_config() {
+    local enabled provider model
+    enabled=$(get_global_vector_enabled)
+    provider=$(get_global_vector_provider)
+    model=$(get_global_vector_model)
+    
+    echo "  Vector Memory: ${GREEN}$enabled${NC}"
+    echo "  Provider:      ${GREEN}$provider${NC}"
+    echo "  Model:         ${GREEN}$model${NC}"
+}
+
+show_instance_vector_config() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    python3 -c "
+import json
+with open('${instance_dir}/config.json', 'r') as f:
+    c = json.load(f)
+defaults = c.get('agents', {}).get('defaults', {})
+enabled = defaults.get('vectorMemoryEnabled', 'inherit')
+provider = defaults.get('vectorMemoryProvider', 'inherit')
+model = defaults.get('vectorMemoryModel', 'inherit')
+print(f'Vector Memory: {enabled}')
+print(f'Provider: {provider}')
+print(f'Model: {model}')
+"
+}
+
+instance_set_vector_memory() {
+    local instance_name="$1"
+    local enabled="$2"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    python3 -c "
+import json
+with open('${instance_dir}/config.json', 'r') as f:
+    c = json.load(f)
+c.setdefault('agents', {}).setdefault('defaults', {})['vectorMemoryEnabled'] = $enabled
+with open('${instance_dir}/config.json', 'w') as f:
+    json.dump(c, f, indent=2)
+"
+}
+
+instance_set_vector_memory_model() {
+    local instance_name="$1"
+    local provider="$2"
+    local model="$3"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    python3 -c "
+import json
+with open('${instance_dir}/config.json', 'r') as f:
+    c = json.load(f)
+c.setdefault('agents', {}).setdefault('defaults', {})['vectorMemoryProvider'] = '$provider'
+c.setdefault('agents', {}).setdefault('defaults', {})['vectorMemoryModel'] = '$model'
+with open('${instance_dir}/config.json', 'w') as f:
+    json.dump(c, f, indent=2)
+"
+}
+
+instance_show_vector_memory() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    python3 -c "
+import json
+with open('${instance_dir}/config.json', 'r') as f:
+    c = json.load(f)
+defaults = c.get('agents', {}).get('defaults', {})
+enabled = defaults.get('vectorMemoryEnabled', False)
+provider = defaults.get('vectorMemoryProvider', 'sentence-transformers')
+model = defaults.get('vectorMemoryModel', 'paraphrase-multilingual-mpnet-base-v2')
+print(f'Vector Memory: {enabled}')
+print(f'Provider: {provider}')
+print(f'Model: {model}')
+"
+}
+
+instance_reset_vector_config() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    python3 -c "
+import json
+with open('${instance_dir}/config.json', 'r') as f:
+    c = json.load(f)
+if 'agents' in c and 'defaults' in c['agents']:
+    defaults = c['agents']['defaults']
+    defaults.pop('vectorMemoryEnabled', None)
+    defaults.pop('vectorMemoryProvider', None)
+    defaults.pop('vectorMemoryModel', None)
+with open('${instance_dir}/config.json', 'w') as f:
+    json.dump(c, f, indent=2)
+"
+}
+
+get_effective_vector_enabled() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    local instance_enabled
+    instance_enabled=$(python3 -c "
+import json
+try:
+    with open('${instance_dir}/config.json', 'r') as f:
+        c = json.load(f)
+    print(c.get('agents', {}).get('defaults', {}).get('vectorMemoryEnabled', 'inherit'))
+except: print('inherit')
+")
+    
+    if [[ "$instance_enabled" != "inherit" ]]; then
+        echo "$instance_enabled"
+        return
+    fi
+    
+    get_global_vector_enabled
+}
+
+get_effective_vector_provider() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    local instance_provider
+    instance_provider=$(python3 -c "
+import json
+try:
+    with open('${instance_dir}/config.json', 'r') as f:
+        c = json.load(f)
+    print(c.get('agents', {}).get('defaults', {}).get('vectorMemoryProvider', 'inherit'))
+except: print('inherit')
+")
+    
+    if [[ "$instance_provider" != "inherit" ]]; then
+        echo "$instance_provider"
+        return
+    fi
+    
+    get_global_vector_provider
+}
+
+get_effective_vector_model() {
+    local instance_name="$1"
+    local instance_dir
+    instance_dir=$(get_instance_dir "$instance_name")
+    
+    local instance_model
+    instance_model=$(python3 -c "
+import json
+try:
+    with open('${instance_dir}/config.json', 'r') as f:
+        c = json.load(f)
+    print(c.get('agents', {}).get('defaults', {}).get('vectorMemoryModel', 'inherit'))
+except: print('inherit')
+")
+    
+    if [[ "$instance_model" != "inherit" ]]; then
+        echo "$instance_model"
+        return
+    fi
+    
+    get_global_vector_model
+}

@@ -14,6 +14,7 @@ NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"
 BACKUP_DIR="${AIMANAGER_DIR}/backups"
 GLOBAL_CONFIG="${NANOBOT_HOME}/global-config.json"
 PATCH_WHATSAPP_AUDIO=true
+PATCH_VECTOR_MEMORY=true
 
 export AIMANAGER_DIR NANOBOT_HOME NANOBOT_INSTANCES BACKUP_DIR GLOBAL_CONFIG
 
@@ -28,6 +29,7 @@ source "${LIB_DIR}/channel.sh"
 source "${LIB_DIR}/llm.sh"
 source "${LIB_DIR}/llm_commands.sh"
 source "${LIB_DIR}/menu_llm.sh"
+source "${LIB_DIR}/menu_memory.sh"
 
 source "${SCRIPTS_DIR}/setup.sh"
 source "${SCRIPTS_DIR}/instance.sh"
@@ -129,6 +131,16 @@ main() {
         instance-reset)
             [[ -z "${2:-}" ]] && { print_error "Specify instance name"; exit 1; }
             cmd_instance_reset "$2"
+            ;;
+        global-vector)
+            shift
+            cmd_global_vector "${1:-}"
+            ;;
+        instance-vector)
+            [[ -z "${2:-}" ]] && { print_error "Specify instance name"; exit 1; }
+            local inst="$2"
+            shift 2
+            cmd_instance_vector "$inst" "${1:-}"
             ;;
         interactive|"") interactive_menu ;;
         help|--help|-h) show_help ;;
