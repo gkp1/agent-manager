@@ -539,7 +539,7 @@ prompt_api_key_choice() {
         echo -e "  [2] Skip (no API key)" >&2
     fi
     echo >&2
-    read -p "Choose [1-${current_key:+3}]: " choice
+    read -r -p "Choose [1-${current_key:+3}]: " choice
     
     case ${choice:-1} in
         1)
@@ -578,7 +578,7 @@ select_llm_provider_interactive() {
     echo -e "  5) Groq - Fast inference" >&2
     echo -e "  6) Custom - OpenAI-compatible" >&2
     echo >&2
-    read -p "Choose provider [1]: " provider_choice
+    read -r -p "Choose provider [1]: " provider_choice
 
     case ${provider_choice:-1} in
         1) echo "openrouter" ;;
@@ -613,13 +613,13 @@ select_model_interactive() {
     done < <(get_provider_models_list "$provider")
     echo -e "  $i) Other model" >&2
     echo >&2
-    read -p "Choose model [1]: " model_choice
+    read -r -p "Choose model [1]: " model_choice
 
     choice_num=${model_choice:-1}
     selected_model="$current_model"
     
     if [[ "$choice_num" -eq $i ]]; then
-        read -p "Custom model: " selected_model
+        read -r -p "Custom model: " selected_model
     elif [[ "$choice_num" -ge 1 && "$choice_num" -lt $i ]]; then
         selected_model="${models[$((choice_num-1))]}"
     fi
