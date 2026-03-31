@@ -312,3 +312,83 @@ prompt_restart_instance() {
         manage_instance restart "$instance_name"
     fi
 }
+
+# ==================== Vector Memory Commands ====================
+
+cmd_global_vector() {
+    local action="$1"
+    
+    case "$action" in
+        enable)
+            set_global_vector_memory "true"
+            print_success "Global vector memory enabled"
+            ;;
+        disable)
+            set_global_vector_memory "false"
+            print_success "Global vector memory disabled"
+            ;;
+        model)
+            local provider="$2"
+            local model="$3"
+            set_global_vector_model "$provider" "$model"
+            print_success "Global vector model set: $provider / $model"
+            ;;
+        status)
+            echo
+            show_global_vector_config
+            ;;
+        clear)
+            rm -f "$GLOBAL_VECTOR_CONFIG_FILE"
+            print_success "Global vector config cleared"
+            ;;
+        *)
+            echo "Usage: $0 global-vector [enable|disable|model|status|clear]"
+            echo "  model: $0 global-vector model <provider> <model>"
+            echo "  Example: $0 global-vector model sentence-transformers paraphrase-multilingual-mpnet-base-v2"
+            ;;
+    esac
+}
+
+cmd_instance_vector() {
+    local instance_name="$1"
+    local action="$2"
+    
+    if ! instance_exists "$instance_name"; then
+        print_error "Instance not found: $instance_name"
+        return 1
+    fi
+    
+    case "$action" in
+        enable)
+            instance_set_vector_memory "$instance_name" "true"
+            print_success "Vector memory enabled for $instance_name"
+            prompt_restart_instance "$instance_name"
+            ;;
+        disable)
+            instance_set_vector_memory "$instance_name" "false"
+            print_success "Vector memory disabled for $instance_name"
+            prompt_restart_instance "$instance_name"
+            ;;
+        model)
+            local provider="$3"
+            local model="$4"
+            instance_set_vector_memory_model "$instance_name" "$provider" "$model"
+            print_success "Vector model set for $instance_name: $provider / $model"
+            prompt_restart_instance "$instance_name"
+            ;;
+        status)
+            echo
+            instance_show_vector_memory "$instance_name"
+            ;;
+        reset)
+            instance_reset_vector_config "$instance_name"
+            print_success "Instance $instance_name reset to global vector config"
+            prompt_restart_instance "$instance_name"
+            ;;
+        *)
+            echo "Usage: $0 instance-vector <instance> [enable|disable|model|status|reset]"
+            echo "  model: $0 instance-vector <instance> model <provider> <model>"
+            echo "  Example: $0 instance-vector wa1 model sentence-transformers paraphrase-multilingual-mpnet-base-v2"
+            ;;
+    esac
+}

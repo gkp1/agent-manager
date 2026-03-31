@@ -22,6 +22,7 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+.opencode/
 
 # Docker volumes and containers
 docker-compose.override.yml
