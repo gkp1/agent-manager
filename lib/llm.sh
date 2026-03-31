@@ -615,12 +615,13 @@ select_model_interactive() {
     echo >&2
     read -r -p "Choose model [1]: " model_choice
 
-    choice_num=${model_choice:-1}
+    choice_num="${model_choice:-1}"
     selected_model="$current_model"
     
-    if [[ "$choice_num" -eq $i ]]; then
-        read -r -p "Custom model: " selected_model
-    elif [[ "$choice_num" -ge 1 && "$choice_num" -lt $i ]]; then
+    if [[ "$choice_num" -eq "$i" ]]; then
+        read -r -p "Custom model: " custom_model
+        selected_model="$custom_model"
+    elif [[ "$choice_num" -ge 1 && "$choice_num" -lt "$i" ]]; then
         selected_model="${models[$((choice_num-1))]}"
     fi
     
