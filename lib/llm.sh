@@ -6,13 +6,13 @@ LLM_PROVIDERS=("openrouter" "openai" "anthropic" "deepseek" "groq" "custom")
 get_provider_default_model() {
     local provider="$1"
     case $provider in
-        openrouter)  echo "x-ai/grok-4.1-fast" ;;
+        openrouter)  echo "moonshotai/kimi-k2.5" ;;
         openai)      echo "gpt-4o" ;;
         anthropic)   echo "claude-sonnet-4-6" ;;
         deepseek)    echo "deepseek-chat" ;;
         groq)        echo "llama-3.3-70b-versatile" ;;
         custom)      echo "default" ;;
-        *)           echo "x-ai/grok-4.1-fast" ;;
+        *)           echo "moonshotai/kimi-k2.5" ;;
     esac
 }
 
@@ -33,11 +33,18 @@ get_provider_models_list() {
     local provider="$1"
     case $provider in
         openrouter)
-            echo "x-ai/grok-4.1-fast"
+            echo "moonshotai/kimi-k2.5"
+            echo "qwen/qwen3.5-397b-a17b"
             echo "anthropic/claude-sonnet-4-6"
             echo "anthropic/claude-opus-4-5"
+            echo "deepseek/deepseek-v3.2"
+            echo "google/gemini-3-flash-preview"
+            echo "minimax/minimax-m2.7"
+            echo "x-ai/grok-4.1-fast"
             echo "google/gemini-2.5-pro-preview"
             echo "meta-llama/llama-4-maverick"
+            echo "z-ai/glm-5-turbo"
+            echo "xiaomi/mimo-v2-pro"
             ;;
         openai)
             echo "gpt-4o"
@@ -319,7 +326,7 @@ print(c.get('agents',{}).get('defaults',{}).get('model',''))
         return
     fi
     
-    echo "x-ai/grok-4.1-fast"
+    echo "moonshotai/kimi-k2.5"
 }
 
 llm_get_effective_api_key() {

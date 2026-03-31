@@ -80,7 +80,7 @@ create_config_json() {
     local channel="$2"
     local api_key="$3"
     local user_id="$4"
-    local model="${5:-x-ai/grok-4.1-fast}"
+    local model="${5:-moonshotai/kimi-k2.5}"
     local provider="${6:-openrouter}"
     local api_base="${7:-}"
 
@@ -257,7 +257,7 @@ create_docker_instance_single() {
     local port="$3"
     local api_key="$4"
     local user_id="$5"
-    local model="${6:-x-ai/grok-4.1-fast}"
+    local model="${6:-moonshotai/kimi-k2.5}"
     local provider="${7:-openrouter}"
     local api_base="${8:-}"
     

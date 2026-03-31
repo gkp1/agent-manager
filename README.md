@@ -94,7 +94,7 @@ You can set a global LLM provider/model that all agents inherit, or override per
 └── global-config.json        # Global settings (optional)
     ├── global:
     │   ├── provider: "openrouter"
-    │   └── model: "x-ai/grok-4.1-fast"
+    │   └── model: "moonshotai/kimi-k2.5"
     └── providers:
         ├── openrouter: { apiKey: "sk-or-v1-..." }
         └── anthropic: { apiKey: "sk-ant-..." }
@@ -297,7 +297,7 @@ volumes:
 
 | Provider | Default Model | Notes |
 |----------|---------------|-------|
-| **OpenRouter** | `x-ai/grok-4.1-fast` | Recommended - access to all models |
+| **OpenRouter** | `moonshotai/kimi-k2.5` | Recommended - access to all models |
 | OpenAI | `gpt-4o` | Direct API access |
 | Anthropic | `claude-sonnet-4-6` | Native Claude API |
 | DeepSeek | `deepseek-chat` | Chinese AI models |
@@ -368,7 +368,7 @@ Each instance has its own `config.json`:
   },
   "agents": {
     "defaults": {
-      "model": "x-ai/grok-4.1-fast",
+      "model": "moonshotai/kimi-k2.5",
       "provider": "openrouter",
       "workspace": "/root/.nanobot/workspace"
     }

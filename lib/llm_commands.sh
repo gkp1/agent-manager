@@ -276,7 +276,7 @@ cmd_instance_reset() {
     echo "Instance will use global config instead."
     echo
     echo -e "Current:  $current_provider / $current_model"
-    echo -e "Global:   ${global_provider:-openrouter} / ${global_model:-x-ai/grok-4.1-fast}"
+    echo -e "Global:   ${global_provider:-openrouter} / ${global_model:-moonshotai/kimi-k2.5}"
     echo
     read -p "Confirm reset? (y/n): " confirm
     
