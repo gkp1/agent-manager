@@ -4,6 +4,18 @@
 
 <img width="2750" height="1536" alt="AI Manager" src="https://github.com/user-attachments/assets/34af13a6-e745-462f-a501-a90b7bfbdf95" />
 
+## Screenshots
+
+| Main Menu | Status View |
+|:---------:|:-----------:|
+| <img width="417" height="583" alt="Main menu screenshot" src="https://github.com/user-attachments/assets/3380be65-ee7d-4a29-8e9e-4cf262644e2d" /> | <img width="417" height="194" alt="Status view screenshot" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" /> |
+
+**Instance creation flow:**
+
+<img width="421" height="571" alt="Instance creation example" src="https://github.com/user-attachments/assets/c1c64147-e66f-49b2-94a4-c594872f0903" />
+
+---
+
 Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
 
 AI Manager runs your AI agents in isolated Docker containers. Each agent gets its own sandboxed environment with **no access** to other containers or your host system — only the folders explicitly mounted in each agent's `docker-compose.yml`. Your data, your control.
@@ -129,19 +141,6 @@ One script. One folder. Everything handled. Install, build, create, manage — a
 - **Real-time Agent Status** — See all your agents, their channels, and connection status at a glance in the interactive menu.
 
 - **Multi-Instance Management** — Create, start, stop, monitor multiple isolated agents from one place.
-
-## Screenshots
-
-
-<img width="417" height="583" alt="sscrenshot" src="https://github.com/user-attachments/assets/3380be65-ee7d-4a29-8e9e-4cf262644e2d" />
-
-<img width="417" height="194" alt="screenshot" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" />
-
-
-## Instance creation example
-
-<img width="421" height="571" alt="Tabby_Kbcecvw6gE" src="https://github.com/user-attachments/assets/c1c64147-e66f-49b2-94a4-c594872f0903" />
-
 
 ## 📋 Requirements
 
