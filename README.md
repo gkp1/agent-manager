@@ -2,7 +2,7 @@
 
 **Quick Links:** [Quick Start](#-quick-start) • [Features](#-features) • [Folder Structure](#-multi-agent-folder-structure-example) • [Architecture](#-architecture) • [LLM Providers](#-supported-llm-providers) • [Troubleshooting](#-troubleshooting)
 
-<img width="2750" height="1536" alt="AI Manager" src="https://github.com/user-attachments/assets/34af13a6-e745-462f-a501-a90b7bfbdf95" />
+<img width="1376" height="768" alt="Gemini_Generated_Image_l9iwcal9iwcal9iw" src="https://github.com/user-attachments/assets/e4c658be-3e8d-468f-8b2e-6fd34f7b4db8" />
 
 ## Screenshots
 
