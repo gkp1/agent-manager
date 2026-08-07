@@ -2,7 +2,7 @@
 
 **Quick Links:** [Quick Start](#-quick-start) • [Features](#-features) • [Folder Structure](#-multi-agent-folder-structure-example) • [Architecture](#-architecture) • [LLM Providers](#-supported-llm-providers) • [Troubleshooting](#-troubleshooting)
 
-<img width="1376" height="768" alt="Gemini_Generated_Image_l9iwcal9iwcal9iw" src="https://github.com/user-attachments/assets/e4c658be-3e8d-468f-8b2e-6fd34f7b4db8" />
+(Summary: a shell script which acts as a docker container manager for your AI agents. Proof of concept and study project, still fully functional)
 
 ## Screenshots
 
