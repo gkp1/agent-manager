@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# xnanobot.sh - AI Manager: Main dispatcher
+# xnanobot.sh - Agent Manager: Main dispatcher
 # Usage: ./xnanobot.sh [command] [options]
 
 set -euo pipefail
@@ -14,6 +14,8 @@ NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"
 BACKUP_DIR="${AIMANAGER_DIR}/backups"
 GLOBAL_CONFIG="${NANOBOT_HOME}/global-config.json"
 PATCH_WHATSAPP_AUDIO=true
+# Upstream nanobot commit the image is built from (the patches and bridge layout target it)
+NANOBOT_PINNED_COMMIT="63d646f"
 
 export AIMANAGER_DIR NANOBOT_HOME NANOBOT_INSTANCES BACKUP_DIR GLOBAL_CONFIG
 
@@ -44,9 +46,7 @@ main() {
     
     case "$command" in
         install) install_nanobot ;;
-        setup) setup_initial ;;
-        setup-wizard) setup_initial --wizard ;;
-        setup-guide) setup_guide_flow ;;
+        setup|setup-wizard|setup-guide) setup_guide_flow ;;
         build) build_nanobot_image ;;
         create) create_docker_instance ;;
         create-multi) create_multi_instances ;;

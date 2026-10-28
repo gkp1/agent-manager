@@ -146,28 +146,36 @@ build_nanobot_image() {
         print_step "Cloning nanobot repository..."
         git clone "$NANOBOT_REPO" "$NANOBOT_SOURCE_DIR"
     fi
-    
+
+    # The patches and the bridge layout target this upstream commit. The forced
+    # checkout also resets files patched by a previous build before re-patching.
+    print_step "Checking out nanobot $NANOBOT_PINNED_COMMIT (local changes in nanobot-source/ are discarded)..."
+    if ! git -C "$NANOBOT_SOURCE_DIR" cat-file -e "${NANOBOT_PINNED_COMMIT}^{commit}" 2>/dev/null; then
+        git -C "$NANOBOT_SOURCE_DIR" fetch origin
+    fi
+    git -C "$NANOBOT_SOURCE_DIR" checkout -q -f "$NANOBOT_PINNED_COMMIT"
+
     if [[ "$PATCH_WHATSAPP_AUDIO" == "true" ]]; then
         apply_audio_patch "$NANOBOT_SOURCE_DIR"
     fi
-    
-    
+
     print_step "Executing: docker build -t nanobot ."
-    cd "$NANOBOT_SOURCE_DIR"
-    docker build -t nanobot .
-    cd - > /dev/null 2>&1
-    
+    if ! (cd "$NANOBOT_SOURCE_DIR" && docker build -t nanobot .); then
+        print_error "Docker build failed."
+        return 1
+    fi
+
     print_success "Docker image built successfully!"
     return 0
 }
 
 setup_guide_flow() {
     print_header
-    print_step "Setup complete following Docker Multi-Tenant guide..."
+    print_step "Full setup..."
     echo
-    echo "This command runs the full guide workflow:"
+    echo "This command runs the full setup:"
     echo "1. Check prerequisites - Docker 20.10+, Docker Compose 2.0+"
-    echo "2. Build Docker image do nanobot"
+    echo "2. Build the nanobot Docker image (pinned to $NANOBOT_PINNED_COMMIT)"
     echo "3. Create isolated Docker instance"
     echo
     read -p "Continue? (y/n): " confirm
@@ -203,65 +211,4 @@ install_nanobot() {
     echo "  $SCRIPT_NAME build"
     echo
     read -p "Press Enter to continue..."
-}
-
-setup_initial() {
-    print_header
-    print_step "Initial nanobot setup..."
-    
-    if ! check_command nanobot; then
-        print_warning "nanobot not found. Installing..."
-        install_nanobot_pip
-    fi
-    
-    print_step "Running onboarding..."
-    if [[ "$1" == "--wizard" ]]; then
-        nanobot onboard --wizard
-    else
-        nanobot onboard
-    fi
-    
-    print_success "Initial setup completed!"
-    print_info "Edit ~/.nanobot/config.json to add your API keys."
-}
-
-configure_channel() {
-    local channel="$1"
-    local instance_name="$2"
-    
-    print_step "Configuring channel: $channel"
-    
-    case $channel in
-        whatsapp)
-            echo "To configure WhatsApp:"
-            echo "1. Make sure nanobot is running - nanobot gateway"
-            echo "2. Execute: nanobot channels login whatsapp"
-            echo "3. Scan the QR Code with your WhatsApp"
-            echo "4. Configure in instance config.json:"
-            echo '   "channels": {'
-            echo '     "whatsapp": {'
-            echo '       "enabled": true,'
-            echo '       "allowFrom": ["+5511999999999"],'
-            echo '       "groupPolicy": "mention"'
-            echo '     }'
-            echo '   }'
-            ;;
-        telegram)
-            echo "To configure Telegram:"
-            echo "1. Open Telegram, search for @BotFather"
-            echo "2. Send /newbot and follow instructions"
-            echo "3. Copy the bot token"
-            echo "4. Configure in ~/.nanobot/config.json"
-            ;;
-        discord)
-            echo "To configure Discord:"
-            echo "1. Access https://discord.com/developers/applications"
-            echo "2. Create an application → Bot → Add Bot"
-            echo "3. Copy the bot token"
-            echo "4. Enable MESSAGE CONTENT INTENT"
-            ;;
-        *)
-            print_error "Channel not supported: $channel"
-            ;;
-    esac
 }
