@@ -13,6 +13,15 @@ instance_exists() {
     [[ -d "$instance_dir" ]] && [[ -f "${instance_dir}/docker-compose.yml" ]]
 }
 
+# Instance names become directory and container names (nanobot-<name>)
+valid_instance_name() {
+    [[ "$1" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]
+}
+
+valid_port() {
+    [[ "$1" =~ ^[0-9]+$ ]] && (( 10#$1 >= 1 && 10#$1 <= 65535 ))
+}
+
 get_instance_channel() {
     local instance_dir="$1"
     python3 -c "
@@ -47,16 +56,6 @@ with open('${instance_dir}/config.json') as f:
     c = json.load(f)
 print(c.get('agents',{}).get('defaults',{}).get('provider','auto'))
 " 2>/dev/null || echo "?"
-}
-
-list_instances() {
-    local instances=()
-    for dir in "${NANOBOT_INSTANCES}"/*/; do
-        if [[ -f "${dir}docker-compose.yml" ]]; then
-            instances+=("$(basename "$dir")")
-        fi
-    done
-    echo "${instances[@]}"
 }
 
 get_instance_status() {

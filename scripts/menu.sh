@@ -56,7 +56,7 @@ show_menu() {
     agent_status=$(get_agents_status)
     
     echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE} 🐈 Nanobot Helper v2.0${NC}"
+    echo -e "${PURPLE} 🐈 Agent Manager${NC}"
     echo -e "${BLUE}  WhatsApp Audio Patch + Multi-Provider LLM${NC}"
     echo -e "${CYAN}══════════════════════════════════════════════════════════════════${NC}"
     
@@ -154,57 +154,68 @@ select_instance() {
     esac
 }
 
+# Run a menu action in a subshell with errexit on, so a failing action (or an
+# invalid selection) returns to the menu instead of exiting the whole program
+run_action() {
+    local rc=0
+    set +e
+    ( set -e; "$@" )
+    rc=$?
+    set -e
+    if (( rc != 0 )); then
+        print_warning "Action failed (exit code $rc)."
+    fi
+}
+
 interactive_menu() {
-    declare -A instance_map
-    
     clear
     echo -e "${PURPLE}══════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}        Nanobot Helper v2.0 - AI Manager for Nanobot${NC}"
+    echo -e "${PURPLE}        🐈 Agent Manager - isolated nanobot agents in Docker${NC}"
     echo -e "${PURPLE}══════════════════════════════════════════════════════════════════${NC}"
     echo
-    echo -e "${GREEN}Welcome to AI Manager!${NC}"
+    echo -e "${GREEN}Welcome to Agent Manager!${NC}"
     echo
     echo -e "${CYAN}This script helps create and manage isolated Docker instances"
-    echo -e "of Nanobot agents using Docker Multi-Tenant.${NC}"
+    echo -e "of nanobot agents, one container per agent.${NC}"
     echo
     echo -e "${YELLOW}Recommendation: Use option [1] Setup All to start!${NC}"
     echo
     read -p "Press Enter to continue..."
-    
+
     while true; do
         show_menu
         read -p "Choose an option [0-26]: " choice
-        
+
         case $choice in
-            1) setup_guide_flow ;;
-            2) check_prerequisites ;;
-            3) build_nanobot_image ;;
-            4) create_docker_instance ;;
-            5) create_multi_instances ;;
-            6) list_instances ;;
-            7) select_instance "start" ;;
-            8) select_instance "stop" ;;
-            9) select_instance "restart" ;;
-            10) select_instance "status" ;;
-            11) select_instance "logs" ;;
-            12) select_instance "chat" ;;
-            13) select_instance "login" ;;
-            14) select_instance "reconnect" ;;
-            15) select_instance "upgrade-bridge" ;;
-            16) select_instance "configure-wa" ;;
-            17) manage_all_instances start ;;
-            18) manage_all_instances stop ;;
-            19) manage_all_instances restart ;;
-            20) manage_all_instances update ;;
-            21) rebuild_docker_image ;;
-            22) configure_instance_menu ;;
-            23) show_help ;;
-            24) delete_instance ;;
-            25) menu_global_llm ;;
-            26) menu_instance_llm ;;
+            1) run_action setup_guide_flow ;;
+            2) run_action check_prerequisites ;;
+            3) run_action build_nanobot_image ;;
+            4) run_action create_docker_instance ;;
+            5) run_action create_multi_instances ;;
+            6) run_action list_instances ;;
+            7) run_action select_instance "start" ;;
+            8) run_action select_instance "stop" ;;
+            9) run_action select_instance "restart" ;;
+            10) run_action select_instance "status" ;;
+            11) run_action select_instance "logs" ;;
+            12) run_action select_instance "chat" ;;
+            13) run_action select_instance "login" ;;
+            14) run_action select_instance "reconnect" ;;
+            15) run_action select_instance "upgrade-bridge" ;;
+            16) run_action select_instance "configure-wa" ;;
+            17) run_action manage_all_instances start ;;
+            18) run_action manage_all_instances stop ;;
+            19) run_action manage_all_instances restart ;;
+            20) run_action manage_all_instances update ;;
+            21) run_action rebuild_docker_image ;;
+            22) run_action configure_instance_menu ;;
+            23) run_action show_help ;;
+            24) run_action delete_instance ;;
+            25) run_action menu_global_llm ;;
+            26) run_action menu_instance_llm ;;
             0)
                 echo
-                print_info "Exiting Nanobot Helper. Goodbye! 🐈"
+                print_info "Exiting Agent Manager. Goodbye! 🐈"
                 exit 0
                 ;;
             *)
@@ -220,50 +231,57 @@ interactive_menu() {
 show_help() {
     print_header
     echo "Usage: ./xnanobot.sh [command] [options]"
-    echo "AI Manager - Multi-Tenant Docker for nanobot agents"
+    echo "Agent Manager - isolated nanobot agents in Docker"
+    echo "Run without a command (or with 'interactive') for the interactive menu."
     echo
     echo "Setup:"
-    echo "  setup-guide      - Setup complete"
-    echo "  check            - Check prerequisites"
-    echo "  build            - Build Docker image"
+    echo "  setup-guide              - Full setup: check, build, create first instance (alias: setup)"
+    echo "  check                    - Check prerequisites (Docker, Compose)"
+    echo "  build                    - Build the patched nanobot Docker image"
+    echo "  rebuild                  - Rebuild the image (same as build)"
+    echo "  update                   - Explain how to update nanobot"
     echo
-    echo "Docker Instances:"
-    echo "  create           - Create new instance"
-    echo "  create-multi     - Create multiple instances"
-    echo "  list             - List instances"
+    echo "Instances:"
+    echo "  create                   - Create a new instance"
+    echo "  create-multi             - Create several instances at once"
+    echo "  list                     - List instances"
+    echo "  configure                - Configure an instance (allowFrom, model, provider)"
+    echo "  delete [name]            - Delete an instance (aliases: remove, rm)"
     echo
-    echo "Instance Management:"
-    echo "  start <name>     - Start instance"
-    echo "  stop <name>      - Stop instance"
-    echo "  restart <name>   - Restart instance"
-    echo "  logs <name>      - View logs"
-    echo "  status <name>    - View status"
-    echo "  chat <name>     - Chat CLI"
-    echo "  login <name>    - Connect WhatsApp"
-    echo "  reconnect <name> - Reconnect WhatsApp"
-    echo "  delete <name>   - Delete instance"
+    echo "Control:"
+    echo "  start <name>             - Start an instance"
+    echo "  stop <name>              - Stop an instance"
+    echo "  restart <name>           - Restart an instance"
+    echo "  logs <name>              - Follow logs"
+    echo "  status <name>            - Show nanobot status"
+    echo "  chat <name>              - Chat with the agent in the terminal"
     echo
     echo "WhatsApp:"
-    echo "  upgrade-bridge <name> - Update WhatsApp bridge"
-    echo "  configure-wa <name>  - Configure WhatsApp"
+    echo "  login <name>             - Link WhatsApp (QR code)"
+    echo "  reconnect <name>         - Clear the session and link again"
+    echo "  upgrade-bridge <name>    - Refresh the bridge from the image and link again"
+    echo "  configure-wa <name>      - Configure allowFrom, group policy, enable/disable"
     echo
     echo "Batch:"
-    echo "  start-all        - Start all"
-    echo "  stop-all         - Stop all"
-    echo "  restart-all      - Restart all"
-    echo "  update-all       - Update all"
+    echo "  start-all | stop-all | restart-all"
+    echo "  update-all               - Recreate all containers (after a rebuild)"
     echo
-    echo "LLM:"
-    echo "  global-set              - Set global LLM"
-    echo "  global-show             - Show global config"
-    echo "  instance-show <name>    - Show instance config"
-    echo "  instance-model <name>   - Set instance model"
-    echo "  instance-provider <name> - Set instance provider"
-    echo "  instance-reset <name>   - Reset to global"
+    echo "LLM (global defaults):"
+    echo "  global-set               - Set provider, API key and model"
+    echo "  global-provider          - Set provider (+ API key)"
+    echo "  global-model             - Set model"
+    echo "  global-key               - Set API key for a provider"
+    echo "  global-show              - Show global config"
+    echo "  global-clear             - Clear global config"
     echo
-    echo "Utilities:"
-    echo "  configure        - Configure instance"
-    echo "  interactive      - Interactive menu"
-    echo "  help             - Show help"
+    echo "LLM (per instance, overrides global):"
+    echo "  instance-show <name>     - Show effective config and where it comes from"
+    echo "  instance-model <name>    - Set model (+ optional API key)"
+    echo "  instance-provider <name> - Set provider (+ optional API key)"
+    echo "  instance-key <name>      - Set instance API key"
+    echo "  instance-key-clear <name> - Clear instance API key (use global)"
+    echo "  instance-reset <name>    - Remove instance LLM settings (use global)"
+    echo
+    echo "  help                     - Show this help"
     echo
 }

@@ -185,15 +185,9 @@ with open('$config_file', 'w') as f:
                 echo "Enter numbers separated by comma:"
                 read -p "Numbers: " numbers
                 if [[ -n "$numbers" ]]; then
-                    python3 -c "
-import json
-nums = [n.strip() for n in '$numbers'.split(',') if n.strip()]
-with open('$config_file', 'r') as f:
-    cfg = json.load(f)
-cfg.setdefault('channels', {}).setdefault('whatsapp', {})['allowFrom'] = nums
-with open('$config_file', 'w') as f:
-    json.dump(cfg, f, indent=2)
-"
+                    json_edit "$config_file" "
+c.setdefault('channels', {}).setdefault('whatsapp', {})['allowFrom'] = [n.strip() for n in env['NUMBERS'].split(',') if n.strip()]" \
+                        NUMBERS="$numbers"
                     print_success "allowFrom updated"
                 fi
                 ;;

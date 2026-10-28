@@ -126,55 +126,32 @@ print(c.get('providers', {}).get('$provider', {}).get('apiKey', ''))
 set_global_provider() {
     local provider="$1"
     init_global_config
-    python3 -c "
-import json
-with open('$GLOBAL_CONFIG', 'r') as f:
-    c = json.load(f)
-c.setdefault('global', {})['provider'] = '$provider'
-with open('$GLOBAL_CONFIG', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "$GLOBAL_CONFIG" "
+c.setdefault('global', {})['provider'] = env['PROVIDER']" PROVIDER="$provider"
 }
 
 set_global_model() {
     local model="$1"
     init_global_config
-    python3 -c "
-import json
-with open('$GLOBAL_CONFIG', 'r') as f:
-    c = json.load(f)
-c.setdefault('global', {})['model'] = '$model'
-with open('$GLOBAL_CONFIG', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "$GLOBAL_CONFIG" "
+c.setdefault('global', {})['model'] = env['MODEL']" MODEL="$model"
 }
 
 set_global_api_key() {
     local provider="$1"
     local api_key="$2"
     init_global_config
-    python3 -c "
-import json
-with open('$GLOBAL_CONFIG', 'r') as f:
-    c = json.load(f)
-c.setdefault('providers', {}).setdefault('$provider', {})['apiKey'] = '$api_key'
-with open('$GLOBAL_CONFIG', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "$GLOBAL_CONFIG" "
+c.setdefault('providers', {}).setdefault(env['PROVIDER'], {})['apiKey'] = env['API_KEY']" \
+        PROVIDER="$provider" API_KEY="$api_key"
 }
 
 clear_global_api_key() {
     local provider="$1"
     init_global_config
-    python3 -c "
-import json
-with open('$GLOBAL_CONFIG', 'r') as f:
-    c = json.load(f)
-if 'providers' in c and '$provider' in c['providers']:
-    c['providers']['$provider'].pop('apiKey', None)
-with open('$GLOBAL_CONFIG', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "$GLOBAL_CONFIG" "
+if env['PROVIDER'] in c.get('providers', {}):
+    c['providers'][env['PROVIDER']].pop('apiKey', None)" PROVIDER="$provider"
 }
 
 clear_global_config() {
@@ -387,14 +364,8 @@ llm_instance_set_model() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
-c.setdefault('agents', {}).setdefault('defaults', {})['model'] = '$model'
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "${instance_dir}/config.json" "
+c.setdefault('agents', {}).setdefault('defaults', {})['model'] = env['MODEL']" MODEL="$model"
 }
 
 llm_instance_set_provider() {
@@ -403,14 +374,8 @@ llm_instance_set_provider() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
-c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = '$provider'
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "${instance_dir}/config.json" "
+c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = env['PROVIDER']" PROVIDER="$provider"
 }
 
 llm_instance_set_api_key() {
@@ -420,14 +385,9 @@ llm_instance_set_api_key() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
-c.setdefault('providers', {}).setdefault('$provider', {})['apiKey'] = '$api_key'
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "${instance_dir}/config.json" "
+c.setdefault('providers', {}).setdefault(env['PROVIDER'], {})['apiKey'] = env['API_KEY']" \
+        PROVIDER="$provider" API_KEY="$api_key"
 }
 
 llm_instance_clear_api_key() {
@@ -436,15 +396,9 @@ llm_instance_clear_api_key() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
-if 'providers' in c and '$provider' in c['providers']:
-    c['providers']['$provider'].pop('apiKey', None)
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "${instance_dir}/config.json" "
+if env['PROVIDER'] in c.get('providers', {}):
+    c['providers'][env['PROVIDER']].pop('apiKey', None)" PROVIDER="$provider"
 }
 
 llm_instance_reset() {
@@ -452,17 +406,11 @@ llm_instance_reset() {
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
+    json_edit "${instance_dir}/config.json" "
 if 'agents' in c and 'defaults' in c['agents']:
     c['agents'].pop('defaults', None)
 if 'providers' in c:
-    c.pop('providers', None)
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    c.pop('providers', None)"
 }
 
 llm_instance_apply_global() {
@@ -478,19 +426,12 @@ llm_instance_apply_global() {
         return 1
     fi
     
-    python3 -c "
-import json
-with open('${instance_dir}/config.json', 'r') as f:
-    c = json.load(f)
-    
-if '$global_provider':
-    c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = '$global_provider'
-if '$global_model':
-    c.setdefault('agents', {}).setdefault('defaults', {})['model'] = '$global_model'
-    
-with open('${instance_dir}/config.json', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+    json_edit "${instance_dir}/config.json" "
+if env['PROVIDER']:
+    c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = env['PROVIDER']
+if env['MODEL']:
+    c.setdefault('agents', {}).setdefault('defaults', {})['model'] = env['MODEL']" \
+        PROVIDER="$global_provider" MODEL="$global_model"
 }
 
 show_instance_effective_config() {
@@ -546,8 +487,10 @@ prompt_api_key_choice() {
         echo -e "  [2] Skip (no API key)" >&2
     fi
     echo >&2
-    read -r -p "Choose [1-${current_key:+3}]: " choice
-    
+    local max_choice=2
+    [[ -n "$current_key" ]] && max_choice=3
+    read -r -p "Choose [1-${max_choice}]: " choice
+
     case ${choice:-1} in
         1)
             if [[ -n "$current_key" ]]; then
@@ -560,13 +503,18 @@ prompt_api_key_choice() {
         2)
             if [[ -n "$current_key" ]]; then
                 read -p "Enter new API key: " new_key
+                echo "$new_key"
             else
-                read -p "Enter API key: " new_key
+                # Skip: no key
+                echo ""
             fi
-            echo "$new_key"
             ;;
         3)
-            echo "__CLEAR__"
+            if [[ -n "$current_key" ]]; then
+                echo "__CLEAR__"
+            else
+                echo ""
+            fi
             ;;
         *)
             echo "$current_key"

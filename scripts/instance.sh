@@ -7,6 +7,15 @@ create_docker_instance() {
     
     read -p "Instance name (ex: wa1, wa2, telegram1): " instance_name
 
+    if ! valid_instance_name "$instance_name"; then
+        print_error "Invalid instance name '$instance_name'. Use letters, numbers, '-' and '_' (ex: wa1)."
+        return 1
+    fi
+    if [[ -e "${NANOBOT_INSTANCES}/${instance_name}" ]]; then
+        print_error "Instance already exists: $instance_name"
+        return 1
+    fi
+
     echo
     echo "Available channels:"
     echo "  1) whatsapp"
@@ -54,9 +63,18 @@ create_docker_instance() {
     local model
     model=$(select_model_interactive "$provider" "$default_model")
 
-    read -p "External port (ex: 18791, 18792): " port
-    read -p "User ID for allowFrom: " user_id
-    
+    local port=""
+    until valid_port "$port"; do
+        [[ -n "$port" ]] && print_error "Invalid port: $port"
+        read -p "External port (ex: 18791, 18792): " port || return 1
+    done
+    port=$((10#$port))
+
+    local user_id=""
+    until [[ -n "$user_id" ]]; do
+        read -p "User ID for allowFrom (phone number, user ID, or * for anyone): " user_id || return 1
+    done
+
     local instance_dir="${NANOBOT_INSTANCES}/${instance_name}"
     mkdir -p "$instance_dir"
     
@@ -84,69 +102,41 @@ create_config_json() {
     local provider="${6:-openrouter}"
     local api_base="${7:-}"
 
-    local providers_section=""
-    
-    case $provider in
-        openrouter)
-            providers_section="\"openrouter\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            ;;
-        openai)
-            providers_section="\"openai\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            ;;
-        anthropic)
-            providers_section="\"anthropic\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            ;;
-        deepseek)
-            providers_section="\"deepseek\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            ;;
-        groq)
-            providers_section="\"groq\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            ;;
-        custom)
-            if [[ -n "$api_base" ]]; then
-                providers_section="\"openai\": {
-      \"apiKey\": \"${api_key}\",
-      \"apiBase\": \"${api_base}\"
-    }"
-            else
-                providers_section="\"openai\": {
-      \"apiKey\": \"${api_key}\"
-    }"
-            fi
-            provider="auto"
-            ;;
-    esac
+    # Custom endpoints are OpenAI-compatible: the key goes under providers.openai
+    # and nanobot picks the provider automatically
+    local key_provider="$provider"
+    if [[ "$provider" == "custom" ]]; then
+        key_provider="openai"
+        provider="auto"
+    else
+        api_base=""
+    fi
 
-    cat > "${dir}/config.json" << EOF
-{
-  "providers": {
-    ${providers_section}
-  },
-  "agents": {
-    "defaults": {
-      "model": "${model}",
-      "provider": "${provider}",
-      "workspace": "/root/.nanobot/workspace"
-    }
-  },
-  "channels": {
-    "${channel}": {
-      "enabled": true,
-      "allowFrom": ["${user_id}"]
-    }
-  }
+    CONFIG_FILE="${dir}/config.json" CHANNEL="$channel" API_KEY="$api_key" USER_ID="$user_id" \
+    MODEL="$model" PROVIDER="$provider" KEY_PROVIDER="$key_provider" API_BASE="$api_base" \
+    python3 -c "
+import json, os
+env = os.environ
+provider_cfg = {'apiKey': env['API_KEY']}
+if env['API_BASE']:
+    provider_cfg['apiBase'] = env['API_BASE']
+config = {
+    'providers': {env['KEY_PROVIDER']: provider_cfg},
+    'agents': {
+        'defaults': {
+            'model': env['MODEL'],
+            'provider': env['PROVIDER'],
+            'workspace': '/root/.nanobot/workspace',
+        }
+    },
+    'channels': {
+        env['CHANNEL']: {'enabled': True, 'allowFrom': [env['USER_ID']]}
+    },
 }
-EOF
+with open(env['CONFIG_FILE'], 'w') as f:
+    json.dump(config, f, indent=2)
+    f.write('\n')
+"
 }
 
 create_docker_compose() {
@@ -198,7 +188,17 @@ create_multi_instances() {
     print_step "Multi-instance creator..."
     
     read -p "How many instances to create? " num_instances
+    if [[ ! "$num_instances" =~ ^[0-9]+$ ]] || (( 10#$num_instances < 1 )); then
+        print_error "Invalid number of instances: $num_instances"
+        return 1
+    fi
+    num_instances=$((10#$num_instances))
+
     read -p "Name prefix (ex: wa, tg): " prefix
+    if ! valid_instance_name "$prefix"; then
+        print_error "Invalid prefix '$prefix'. Use letters, numbers, '-' and '_'."
+        return 1
+    fi
 
     echo
     echo "Available channels:"
@@ -207,7 +207,12 @@ create_multi_instances() {
     channel=$(channel_from_number "${channel_choice:-1}")
 
     read -p "Initial port (ex: 18791): " start_port
-    
+    if ! valid_port "$start_port" || ! valid_port "$((10#$start_port + num_instances - 1))"; then
+        print_error "Invalid port range starting at: $start_port"
+        return 1
+    fi
+    start_port=$((10#$start_port))
+
     local provider
     provider=$(select_llm_provider_interactive)
     
@@ -243,7 +248,11 @@ create_multi_instances() {
         local instance_name="${prefix}${i}"
         local port=$((start_port + i - 1))
         local user_id="YOUR_USER_ID_${i}"
-        
+
+        if [[ -e "${NANOBOT_INSTANCES}/${instance_name}" ]]; then
+            print_warning "Skipping $instance_name: instance already exists."
+            continue
+        fi
         print_step "Creating instance $instance_name (port: $port)..."
         create_docker_instance_single "$instance_name" "$channel" "$port" "$api_key" "$user_id" "$model" "$provider" "$api_base"
     done
@@ -498,15 +507,9 @@ with open('$cfg', 'w') as f:
             2)
                 read -p "IDs/numbers (separated by comma): " ids
                 if [[ -n "$ids" ]]; then
-                    python3 -c "
-import json
-with open('$cfg', 'r') as f:
-    c = json.load(f)
-nums = [n.strip() for n in '$ids'.split(',') if n.strip()]
-c['channels']['$channel']['allowFrom'] = nums
-with open('$cfg', 'w') as f:
-    json.dump(c, f, indent=2)
-"
+                    json_edit "$cfg" "
+c['channels'][env['CHANNEL']]['allowFrom'] = [n.strip() for n in env['IDS'].split(',') if n.strip()]" \
+                        CHANNEL="$channel" IDS="$ids"
                     print_success "allowFrom updated"
                 fi
                 ;;

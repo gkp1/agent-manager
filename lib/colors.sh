@@ -11,7 +11,7 @@ NC='\033[0m'
 
 print_header() {
     echo -e "${PURPLE}════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}   🐈 Nanobot Helper Script${NC}"
+    echo -e "${PURPLE}   🐈 Agent Manager${NC}"
     echo -e "${PURPLE}════════════════════════════════════════════${NC}"
     echo
 }
