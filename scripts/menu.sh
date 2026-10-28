@@ -89,7 +89,6 @@ show_menu() {
     echo -e "  ${YELLOW}🤖 AI LLM${NC}"
     echo -e "    ${YELLOW}[25]${NC} Global LLM Settings"
     echo -e "    ${YELLOW}[26]${NC} Instance LLM Settings"
-    echo -e "    ${YELLOW}[27]${NC} Memory Settings"
     echo
     echo -e "  ${RED}⚠️  Danger${NC}"
     echo -e "    ${RED}[24]${NC} Delete Instance (IRREVERSIBLE)"
@@ -203,14 +202,13 @@ interactive_menu() {
             24) delete_instance ;;
             25) menu_global_llm ;;
             26) menu_instance_llm ;;
-            27) menu_memory ;;
             0)
                 echo
                 print_info "Exiting Nanobot Helper. Goodbye! 🐈"
                 exit 0
                 ;;
             *)
-                print_error "Invalid option. Choose a number from 0 to 27."
+                print_error "Invalid option. Choose a number from 0 to 26."
                 ;;
         esac
         
