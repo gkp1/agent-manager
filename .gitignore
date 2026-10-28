@@ -1,9 +1,10 @@
-# Nanobot source (managed separately)
+# Nanobot source (cloned at the pinned commit and patched by the build)
 nanobot-source/
 
-# User data directories (outside git)
-../.nanobot/
-../backups/
+# Runtime data: instances hold API keys, WhatsApp sessions and chat memory,
+# and backups/ holds copies of instance config.json files
+nanobot-instances/
+backups/
 
 # Environment & secrets
 *.env
@@ -24,13 +25,5 @@ Thumbs.db
 .vscode/
 .opencode/
 
-# Docker volumes and containers
+# Docker
 docker-compose.override.yml
-
-# Instance data (too large, runtime generated)
-nanobot-instances/*/bridge/node_modules/
-nanobot-instances/*/bridge/dist/
-nanobot-instances/*/whatsapp-auth/
-nanobot-instances/*/workspace/sessions/
-nanobot-instances/*/workspace/media/
-nanobot-instances/*
