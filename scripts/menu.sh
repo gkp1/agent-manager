@@ -266,7 +266,7 @@ show_help() {
     echo "  start-all | stop-all | restart-all"
     echo "  update-all               - Recreate all containers (after a rebuild)"
     echo
-    echo "LLM (global defaults):"
+    echo "LLM (global defaults, copied into an instance by instance-reset):"
     echo "  global-set               - Set provider, API key and model"
     echo "  global-provider          - Set provider (+ API key)"
     echo "  global-model             - Set model"
@@ -274,13 +274,13 @@ show_help() {
     echo "  global-show              - Show global config"
     echo "  global-clear             - Clear global config"
     echo
-    echo "LLM (per instance, overrides global):"
-    echo "  instance-show <name>     - Show effective config and where it comes from"
+    echo "LLM (per instance, the config.json the agent actually uses):"
+    echo "  instance-show <name>     - Show the instance's provider, model and key status"
     echo "  instance-model <name>    - Set model (+ optional API key)"
     echo "  instance-provider <name> - Set provider (+ optional API key)"
     echo "  instance-key <name>      - Set instance API key"
-    echo "  instance-key-clear <name> - Clear instance API key (use global)"
-    echo "  instance-reset <name>    - Remove instance LLM settings (use global)"
+    echo "  instance-key-clear <name> - Replace the instance API key with the global one"
+    echo "  instance-reset <name>    - Copy the global provider, model and key into the instance"
     echo
     echo "  help                     - Show this help"
     echo

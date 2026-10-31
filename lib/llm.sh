@@ -3,6 +3,10 @@
 
 LLM_PROVIDERS=("openrouter" "openai" "anthropic" "deepseek" "groq" "custom")
 
+# What nanobot (at the pinned commit) uses when an instance's config.json sets no provider/model
+NANOBOT_DEFAULT_PROVIDER="auto"
+NANOBOT_DEFAULT_MODEL="anthropic/claude-opus-4-5"
+
 get_provider_default_model() {
     local provider="$1"
     case $provider in
@@ -267,15 +271,10 @@ print(c.get('agents',{}).get('defaults',{}).get('provider',''))
         echo "$instance_provider"
         return
     fi
-    
-    local global_provider
-    global_provider=$(get_global_provider)
-    if [[ -n "$global_provider" ]]; then
-        echo "$global_provider"
-        return
-    fi
-    
-    echo "openrouter"
+
+    # The container only reads its own config.json; without a provider there,
+    # nanobot falls back to its own default (not to the global config)
+    echo "$NANOBOT_DEFAULT_PROVIDER"
 }
 
 llm_get_effective_model() {
@@ -295,15 +294,8 @@ print(c.get('agents',{}).get('defaults',{}).get('model',''))
         echo "$instance_model"
         return
     fi
-    
-    local global_model
-    global_model=$(get_global_model)
-    if [[ -n "$global_model" ]]; then
-        echo "$global_model"
-        return
-    fi
-    
-    echo "moonshotai/kimi-k2.5"
+
+    echo "$NANOBOT_DEFAULT_MODEL"
 }
 
 llm_get_effective_api_key() {
@@ -311,23 +303,13 @@ llm_get_effective_api_key() {
     local provider="$2"
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
-    
-    local instance_key
-    instance_key=$(python3 -c "
+
+    python3 -c "
 import json
 with open('${instance_dir}/config.json') as f:
     c = json.load(f)
 print(c.get('providers',{}).get('$provider',{}).get('apiKey',''))
-" 2>/dev/null)
-    
-    if [[ -n "$instance_key" ]]; then
-        echo "$instance_key"
-        return
-    fi
-    
-    local global_key
-    global_key=$(get_global_api_key "$provider")
-    echo "$global_key"
+" 2>/dev/null
 }
 
 llm_get_effective_source() {
@@ -344,17 +326,10 @@ print(c.get('agents',{}).get('defaults',{}).get('model',''))
 " 2>/dev/null)
     
     if [[ -n "$instance_model" ]]; then
-        echo "CUSTOM"
+        echo "INSTANCE"
         return
     fi
-    
-    local global_provider
-    global_provider=$(get_global_provider)
-    if [[ -n "$global_provider" ]]; then
-        echo "GLOBAL"
-        return
-    fi
-    
+
     echo "DEFAULT"
 }
 
@@ -401,37 +376,30 @@ if env['PROVIDER'] in c.get('providers', {}):
     c['providers'][env['PROVIDER']].pop('apiKey', None)" PROVIDER="$provider"
 }
 
-llm_instance_reset() {
-    local instance_name="$1"
-    local instance_dir
-    instance_dir=$(get_instance_dir "$instance_name")
-    
-    json_edit "${instance_dir}/config.json" "
-if 'agents' in c and 'defaults' in c['agents']:
-    c['agents'].pop('defaults', None)
-if 'providers' in c:
-    c.pop('providers', None)"
-}
-
+# Copy the global provider, model and that provider's API key (if set) into an
+# instance's config.json. Containers only read their own config.json, so global
+# settings are defaults that reach an instance only through this copy.
 llm_instance_apply_global() {
     local instance_name="$1"
     local instance_dir
     instance_dir=$(get_instance_dir "$instance_name")
-    
-    local global_provider global_model
+
+    local global_provider global_model global_key
     global_provider=$(get_global_provider)
     global_model=$(get_global_model)
-    
-    if [[ -z "$global_provider" && -z "$global_model" ]]; then
+
+    if [[ -z "$global_provider" || -z "$global_model" ]]; then
         return 1
     fi
-    
+    global_key=$(get_global_api_key "$global_provider")
+
     json_edit "${instance_dir}/config.json" "
-if env['PROVIDER']:
-    c.setdefault('agents', {}).setdefault('defaults', {})['provider'] = env['PROVIDER']
-if env['MODEL']:
-    c.setdefault('agents', {}).setdefault('defaults', {})['model'] = env['MODEL']" \
-        PROVIDER="$global_provider" MODEL="$global_model"
+defaults = c.setdefault('agents', {}).setdefault('defaults', {})
+defaults['provider'] = env['PROVIDER']
+defaults['model'] = env['MODEL']
+if env['API_KEY']:
+    c.setdefault('providers', {}).setdefault(env['PROVIDER'], {})['apiKey'] = env['API_KEY']" \
+        PROVIDER="$global_provider" MODEL="$global_model" API_KEY="$global_key"
 }
 
 show_instance_effective_config() {
@@ -443,13 +411,17 @@ show_instance_effective_config() {
     source=$(llm_get_effective_source "$instance_name")
     
     if llm_instance_has_key_override "$instance_name" "$provider"; then
-        key_source="INSTANCE"
-    elif [[ -n "$(get_global_api_key "$provider")" ]]; then
-        key_source="GLOBAL"
+        key_source="set in config.json"
     else
         key_source="NOT SET"
     fi
-    
+
+    if [[ "$source" == "INSTANCE" ]]; then
+        source="instance config.json"
+    else
+        source="nanobot default (no model in config.json)"
+    fi
+
     echo
     echo -e "${CYAN}Instance: $instance_name${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

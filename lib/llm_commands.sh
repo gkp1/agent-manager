@@ -27,7 +27,7 @@ cmd_global_set() {
     echo "  Provider: $provider"
     echo "  Model: $model"
     echo
-    prompt_restart_all_instances
+    print_global_defaults_note
 }
 
 cmd_global_provider() {
@@ -47,7 +47,7 @@ cmd_global_provider() {
     
     print_success "Global provider set to: $provider"
     echo
-    prompt_restart_all_instances
+    print_global_defaults_note
 }
 
 cmd_global_model() {
@@ -69,7 +69,7 @@ cmd_global_model() {
     
     print_success "Global model set to: $model"
     echo
-    prompt_restart_all_instances
+    print_global_defaults_note
 }
 
 cmd_global_key() {
@@ -86,7 +86,7 @@ cmd_global_key() {
         set_global_api_key "$provider" "$api_key"
         print_success "API key set for: $provider"
         echo
-        prompt_restart_all_instances
+        print_global_defaults_note
     else
         print_warning "No API key set"
     fi
@@ -100,7 +100,7 @@ cmd_global_clear() {
     clear_global_config
     print_success "Global config cleared"
     echo
-    prompt_restart_all_instances
+    print_global_defaults_note
 }
 
 cmd_instance_show() {
@@ -133,9 +133,8 @@ cmd_instance_model() {
     echo -e "Current: $current_provider / $current_model"
     echo
     
-    if [[ "$source" == "GLOBAL" || "$source" == "DEFAULT" ]]; then
-        echo -e "${YELLOW}This instance currently INHERITS global config.${NC}"
-        echo "Setting a custom model will override global."
+    if [[ "$source" == "DEFAULT" ]]; then
+        echo -e "${YELLOW}This instance has no model in its config.json, so nanobot uses its own default.${NC}"
         echo
     fi
     
@@ -149,7 +148,7 @@ cmd_instance_model() {
     
     if [[ "$key_choice" == "__CLEAR__" ]]; then
         llm_instance_clear_api_key "$instance_name" "$current_provider"
-        print_success "Instance API key cleared (will use global)"
+        print_success "Instance API key cleared"
     elif [[ -n "$key_choice" ]]; then
         llm_instance_set_api_key "$instance_name" "$current_provider" "$key_choice"
         print_success "Instance API key set (override)"
@@ -208,11 +207,9 @@ cmd_instance_key() {
     local provider
     provider=$(llm_get_effective_provider "$instance_name")
     
-    local current_key=""
+    local current_key="(not set)"
     if llm_instance_has_key_override "$instance_name" "$provider"; then
-        current_key="(instance override)"
-    elif [[ -n "$(get_global_api_key "$provider")" ]]; then
-        current_key="(global)"
+        current_key="(set in config.json)"
     fi
     
     echo
@@ -226,7 +223,7 @@ cmd_instance_key() {
     
     if [[ "$new_key" == "__CLEAR__" ]]; then
         llm_instance_clear_api_key "$instance_name" "$provider"
-        print_success "Instance API key cleared - now using global"
+        print_success "Instance API key cleared"
     elif [[ -n "$new_key" ]]; then
         llm_instance_set_api_key "$instance_name" "$provider" "$new_key"
         print_success "Instance API key set (override)"
@@ -246,10 +243,25 @@ cmd_instance_key_clear() {
     
     local provider
     provider=$(llm_get_effective_provider "$instance_name")
-    
-    llm_instance_clear_api_key "$instance_name" "$provider"
-    
-    print_success "Instance $instance_name API key cleared - now using global"
+
+    # The container only reads its own config.json, so "use global" means copying the global key in
+    local global_key
+    global_key=$(get_global_api_key "$provider")
+
+    if [[ -n "$global_key" ]]; then
+        llm_instance_set_api_key "$instance_name" "$provider" "$global_key"
+        print_success "Instance $instance_name now has the global $provider API key (copied into its config.json)"
+    else
+        print_warning "No global $provider API key is set. Clearing the instance key leaves $instance_name without an API key."
+        local confirm
+        read -r -p "Clear it anyway? (y/n): " confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            print_info "Cancelled."
+            return 0
+        fi
+        llm_instance_clear_api_key "$instance_name" "$provider"
+        print_success "Instance $instance_name API key cleared"
+    fi
     echo
     prompt_restart_instance "$instance_name"
 }
@@ -269,37 +281,43 @@ cmd_instance_reset() {
     local global_provider global_model
     global_provider=$(get_global_provider)
     global_model=$(get_global_model)
-    
+
+    if [[ -z "$global_provider" || -z "$global_model" ]]; then
+        print_error "No global provider/model set. Set them first: $SCRIPT_NAME global-set"
+        return 1
+    fi
+
+    local key_note="keeps its current API key (no global $global_provider key set)"
+    [[ -n "$(get_global_api_key "$global_provider")" ]] && key_note="gets the global $global_provider API key"
+
     echo
     echo -e "${YELLOW}Instance: $instance_name${NC}"
-    echo "This will remove all custom LLM settings."
-    echo "Instance will use global config instead."
+    echo "This copies the global provider and model into the instance's config.json."
+    echo "The instance $key_note."
     echo
     echo -e "Current:  $current_provider / $current_model"
-    echo -e "Global:   ${global_provider:-openrouter} / ${global_model:-moonshotai/kimi-k2.5}"
+    echo -e "Global:   $global_provider / $global_model"
     echo
     read -p "Confirm reset? (y/n): " confirm
-    
+
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         print_info "Cancelled."
         return
     fi
-    
-    llm_instance_reset "$instance_name"
-    
-    print_success "Instance $instance_name reset to global config"
+
+    llm_instance_apply_global "$instance_name"
+
+    print_success "Instance $instance_name now uses $global_provider / $global_model (copied from global)"
     echo
     prompt_restart_instance "$instance_name"
 }
 
-prompt_restart_all_instances() {
+# Global settings are defaults on the host: containers only read their own
+# config.json, so changing them does not affect running instances.
+print_global_defaults_note() {
     echo
-    echo -e "${YELLOW}All instances need to be restarted to apply changes.${NC}"
-    local confirm
-    read -r -p "Restart all instances now? (y/n): " confirm
-    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-        manage_all_instances restart
-    fi
+    print_info "Global settings are defaults. Existing instances keep their own config.json."
+    echo "  To copy the global provider, model and key into an instance: $SCRIPT_NAME instance-reset <name>"
 }
 
 prompt_restart_instance() {

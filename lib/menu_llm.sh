@@ -5,8 +5,10 @@ menu_global_llm() {
     while true; do
         print_header
         echo -e "${YELLOW}━━━ Global LLM Settings ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo "  Defaults stored on the host. They reach an instance only when copied in"
+        echo "  (Instance LLM Settings → [5], or: $SCRIPT_NAME instance-reset <name>)."
         echo
-        
+
         show_global_config
         
         echo -e "${GREEN}━━━ Global Settings ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -91,10 +93,10 @@ menu_instance_llm() {
             model=$(llm_get_effective_model "$inst")
             source=$(llm_get_effective_source "$inst")
             
-            if [[ "$source" == "CUSTOM" ]]; then
+            if [[ "$source" == "INSTANCE" ]]; then
                 echo -e "  ${YELLOW}[$i]${NC} $inst  ${GREEN}$provider${NC} / ${GREEN}$model${NC} ${CYAN}(custom)${NC}"
             else
-                echo -e "  ${YELLOW}[$i]${NC} $inst  ${GREEN}$provider${NC} / ${GREEN}$model${NC} ${YELLOW}(inherits global)${NC}"
+                echo -e "  ${YELLOW}[$i]${NC} $inst  ${GREEN}$provider${NC} / ${GREEN}$model${NC} ${YELLOW}(no model set: nanobot default)${NC}"
             fi
             instance_display[$i]="$inst"
             ((i++))
@@ -137,9 +139,9 @@ menu_instance_llm_config() {
         echo -e "${GREEN}━━━ Configure $instance_name ━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo "  [1] Change model (+ optional new API key)"
         echo "  [2] Change provider (+ optional new API key)"
-        echo "  [3] Set instance API key (override global)"
-        echo "  [4] Clear instance API key (use global)"
-        echo "  [5] Reset to global config"
+        echo "  [3] Set instance API key"
+        echo "  [4] Replace instance API key with the global one"
+        echo "  [5] Copy global provider/model/key into this instance"
         echo "  [0] Back"
         echo
         read -p "Choose [0-5]: " choice
