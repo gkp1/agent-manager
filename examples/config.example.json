@@ -1,0 +1,22 @@
+{
+  "providers": {
+    "openrouter": {
+      "apiKey": "sk-or-v1-your-openrouter-key"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": "moonshotai/kimi-k2.5",
+      "provider": "openrouter",
+      "workspace": "/root/.nanobot/workspace"
+    }
+  },
+  "channels": {
+    "whatsapp": {
+      "enabled": true,
+      "allowFrom": [
+        "+5511999999999"
+      ]
+    }
+  }
+}

@@ -1,5 +1,10 @@
 # AI Manager Roadmap
 
+> **Historical planning notes** from the March 2026 refactor, kept for context. Both parts are implemented.
+> Two things changed later: the "Current" status below describes the code *before* the refactor, and
+> global LLM settings (Part 2) are no longer inherited live. Containers only read their own `config.json`,
+> so `instance-reset` copies the global provider, model and key into it. See the README for the current behavior.
+
 ## Project Status
 - **Current**: Single monolithic script (xnanobot.sh - 2412 lines)
 - **Goal**: Modular, maintainable structure with enhanced LLM management

@@ -1,327 +1,192 @@
-# 🐈 AI Manager
+# Agent Manager
 
-**Quick Links:** [Quick Start](#-quick-start) • [Features](#-features) • [Folder Structure](#-multi-agent-folder-structure-example) • [Architecture](#-architecture) • [LLM Providers](#-supported-llm-providers) • [Troubleshooting](#-troubleshooting)
+A Bash CLI and interactive menu for running several [nanobot](https://github.com/HKUDS/nanobot) AI agents side by side, each in its own Docker container with its own config, memory and chat channel.
 
-(Summary: a shell script which acts as a docker container manager for your AI agents. Proof of concept and study project, still fully functional)
+> [!NOTE]
+> **Study prototype, not actively maintained.** It was built and used on Linux with Docker, against nanobot commit [`63d646f`](https://github.com/HKUDS/nanobot/commit/63d646f) (March 2026), which the build pins. It is not being developed further. Use it as a reference or a starting point.
 
 ## Screenshots
 
-| Main Menu | Status View |
+| Main menu | Status view |
 |:---------:|:-----------:|
-| <img width="417" height="583" alt="Main menu screenshot" src="https://github.com/user-attachments/assets/3380be65-ee7d-4a29-8e9e-4cf262644e2d" /> | <img width="417" height="194" alt="Status view screenshot" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" /> |
+| <img width="417" height="583" alt="Main menu" src="https://github.com/user-attachments/assets/3380be65-ee7d-4a29-8e9e-4cf262644e2d" /> | <img width="417" height="194" alt="Agent status" src="https://github.com/user-attachments/assets/301d16c5-07a8-40b8-a862-147312051c0e" /> |
 
-**Instance creation flow:**
+**Creating an instance:**
 
-<img width="421" height="571" alt="Instance creation example" src="https://github.com/user-attachments/assets/c1c64147-e66f-49b2-94a4-c594872f0903" />
+<img width="421" height="571" alt="Instance creation" src="https://github.com/user-attachments/assets/c1c64147-e66f-49b2-94a4-c594872f0903" />
 
----
+## What it does
 
-Built on [HKUDS/nanobot](https://github.com/HKUDS/nanobot) — as powerful as OpenClaw, but lighter. Open source. Self-hosted. Actually yours.
+- **Builds a patched nanobot image.** It clones nanobot at the pinned commit and patches the WhatsApp bridge so voice messages are downloaded like images and documents. Vanilla nanobot only tags them as `[Voice Message]`. Then it builds one `nanobot` image that every agent uses.
+- **Runs one container per agent.** Each agent has a directory under `nanobot-instances/<name>/` and a container named `nanobot-<name>`. The container only sees the files mounted from that directory.
+- **Supports these channels:** WhatsApp (with a QR-code login flow), Telegram, Discord, Feishu, Slack, Matrix and Email.
+- **Supports these LLM providers:** OpenRouter, OpenAI, Anthropic, DeepSeek, Groq, or any OpenAI-compatible endpoint, configured per agent. You can save global defaults and copy them into agents.
+- **Works as an interactive menu or as CLI commands.** Every action is available both ways.
 
-AI Manager runs your AI agents in isolated Docker containers. Each agent gets its own sandboxed environment with **no access** to other containers or your host system — only the folders explicitly mounted in each agent's `docker-compose.yml`. Your data, your control.
+## Requirements
 
-## 📁 Multi-Agent Folder Structure Example
-
-```
-~/aimanager/
-├── xnanobot.sh                          # Main script
-├── nanobot-instances/                   # All agents live here
-│   ├── wa1/                             # Agent 1: WhatsApp
-│   │   ├── config.json                  # wa1's LLM + channel config
-│   │   ├── docker-compose.yml           # wa1's isolated container
-│   │   ├── bridge/                     # wa1's WhatsApp bridge
-│   │   │   ├── src/
-│   │   │   ├── dist/
-│   │   │   └── package.json
-│   │   ├── workspace/                   # wa1's memory & files
-│   │   │   ├── AGENTS.md
-│   │   │   ├── TOOLS.md
-│   │   │   ├── USER.md
-│   │   │   ├── memory/
-│   │   │   │   ├── MEMORY.md
-│   │   │   │   └── HISTORY.md
-│   │   │   └── heartbeat.json
-│   │   └── whatsapp-auth/              # wa1's WhatsApp session
-│   │       ├── creds.json
-│   │       └── session.json
-│   │
-│   ├── wa2/                             # Agent 2: WhatsApp (different number)
-│   │   ├── config.json                  # Can use DIFFERENT LLM provider!
-│   │   ├── docker-compose.yml
-│   │   ├── bridge/
-│   │   ├── workspace/                    # wa2's SEPARATE memory
-│   │   └── whatsapp-auth/               # wa2's SEPARATE session
-│   │
-│   ├── tg1/                             # Agent 3: Telegram
-│   │   ├── config.json                  # Telegram bot config
-│   │   ├── docker-compose.yml
-│   │   └── workspace/
-│   │       ├── AGENTS.md
-│   │       ├── TOOLS.md
-│   │       └── memory/
-│   │
-│   └── discord1/                        # Agent 4: Discord
-│       ├── config.json
-│       ├── docker-compose.yml
-│       └── workspace/
-│
-├── nanobot-source/                      # Nanobot source code
-│   ├── bridge/
-│   ├── src/
-│   └── Dockerfile
-└── backups/                             # Instance backups
-    └── wa1_20240330_120000/
-        ├── config.json
-        └── docker-compose.yml
-```
-
-**Key Points:**
-- Each agent is fully isolated — `wa1` cannot access `wa2`'s data
-- Different agents can use different LLM providers/models
-- Global LLM settings can be applied to all agents, or each can have its own
-- WhatsApp, Telegram, Discord, Feishu, Slack, Matrix, Email — mix and match
-- Each workspace has its own memory, history, and state
-
-### Workspace Contents (per agent)
-
-Each agent's `workspace/` folder contains:
-```
-workspace/
-├── AGENTS.md         # Agent personality & instructions
-├── TOOLS.md          # Available tools for this agent
-├── USER.md           # User context
-├── HEARTBEAT.md       # Heartbeat config
-├── memory/
-│   ├── MEMORY.md     # Long-term memory
-│   └── HISTORY.md    # Conversation history
-└── heartbeat.json    # Heartbeat state
-```
-
-### Global LLM Configuration
-
-You can set a global LLM provider/model that all agents inherit, or override per-agent:
-
-```
-~/.nanobot/
-└── global-config.json        # Global settings (optional)
-    ├── global:
-    │   ├── provider: "openrouter"
-    │   └── model: "moonshotai/kimi-k2.5"
-    └── providers:
-        ├── openrouter: { apiKey: "sk-or-v1-..." }
-        └── anthropic: { apiKey: "sk-ant-..." }
-```
-
-Commands: (command flags purely for script usage, all of this is configurable interactively via the main script menu :)
-```bash
-./xnanobot.sh global-set           # Set global provider + model + API key
-./xnanobot.sh global-show         # Show global config
-./xnanobot.sh instance-model wa1  # Override for specific agent
-./xnanobot.sh instance-reset wa1   # Reset wa1 to use global
-```
-
-### The Problem
-
-Setting up AI agents is painful. Multiple tools, conflicting dependencies, manual configuration for each instance. Want 2 agents? Double the headaches.
-
-### The Solution
-
-One script. One folder. Everything handled. Install, build, create, manage — all from a single interactive menu or CLI commands. You focus on your agents, not infrastructure.
-
-## ✨ Features
-
-- **Zero Config Overhead** — Script handles installation, Docker builds, and agent management. You just manage agents.
-
-- **True Docker Isolation** — Each agent runs in its own container with isolated workspace, memory, and sessions. No cross-contamination. What each container can access is defined by bind mounts in its `docker-compose.yml` — nothing else.
-
-- **WhatsApp Audio Patch** — We patch the nanobot bridge on build to natively handle voice messages (`.ogg` downloads). This isn't in vanilla nanobot — we add it automatically.
-
-- **Multi-Provider LLM** — OpenRouter, OpenAI, Anthropic, DeepSeek, Groq, or any OpenAI-compatible endpoint. Configure per-agent, switch anytime.
-
-- **Real-time Agent Status** — See all your agents, their channels, and connection status at a glance in the interactive menu.
-
-- **Multi-Instance Management** — Create, start, stop, monitor multiple isolated agents from one place.
-
-## 📋 Requirements
-
-- Docker 20.10+
-- Docker Compose v2+
+- Linux, or macOS with Bash 4+ (`brew install bash`; macOS ships Bash 3.2). On Windows, use WSL.
+- Docker 20.10+ with Docker Compose v2
 - Git
-- Python 3.x
+- Python 3 (used to read and edit the JSON configs)
 
-## 🚀 Quick Start
+## Quick start
 
 ```bash
-# Clone the repo
-git clone https://github.com/youruser/aimanager.git
-cd aimanager
-
-# Make script executable
+git clone https://github.com/gkp1/agent-manager.git
+cd agent-manager
 chmod +x xnanobot.sh
 
-# Run interactive menu
-./xnanobot.sh
+./xnanobot.sh          # interactive menu; [1] Setup All runs check → build → create
 
-# Add a global alias "xnano" or "xn" to run ~/aimanager/xnanobot.sh
-"alias xnano='bash ~/aimanager/xnanobot.sh'" >> ~/.bashrc && source ~/.bashrc
+# or step by step
+./xnanobot.sh check    # Docker and Compose versions
+./xnanobot.sh build    # clone nanobot into nanobot-source/, patch it, docker build
+./xnanobot.sh create   # name, channel, provider, API key, model, port, allowed user
+
+# optional shell alias
+echo "alias xnano='bash $(pwd)/xnanobot.sh'" >> ~/.bashrc && source ~/.bashrc
 ```
 
-### First Time Setup
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║    🐈 Nanobot Helper v2.0                                        ║
-║    WhatsApp Audio Patch + Multi-Provider LLM                     ║
-╚══════════════════════════════════════════════════════════════════╝
-  📊 Agents
-  [wa1] WhatsApp ✅ Connected
-
-  ⚡ Configuration
-    [1] Configure All  [2] Prerequisites  [3] Build Image
-
-  📦 Instances
-    [4] Create  [5] Create Multiple  [6] List
-    ...
-```
-
-## 📖 Usage
-
-### Interactive Menu
+### Example: a WhatsApp agent
 
 ```bash
-./xnanobot.sh          # Launch interactive menu
+./xnanobot.sh create      # name: wa1, channel: whatsapp, port: 18791
+./xnanobot.sh login wa1   # scan the QR code: WhatsApp → Linked devices → Link a device
+./xnanobot.sh start wa1
+./xnanobot.sh logs wa1    # wait for "Connected to WhatsApp"
 ```
 
-### CLI Commands
+## Commands
+
+Run `./xnanobot.sh help` for the full list.
 
 | Command | Description |
-|---------|-------------|
-| `./xnanobot.sh create` | Create new instance |
-| `./xnanobot.sh list` | List all instances |
-| `./xnanobot.sh start <name>` | Start instance |
-| `./xnanobot.sh stop <name>` | Stop instance |
-| `./xnanobot.sh logs <name>` | View instance logs |
-| `./xnanobot.sh status <name>` | Check instance status |
-| `./xnanobot.sh login <name>` | WhatsApp QR login |
-| `./xnanobot.sh delete <name>` | Delete instance (irreversible) |
-| `./xnanobot.sh rebuild` | Rebuild Docker image with patches |
+|---|---|
+| `setup-guide` | Full setup: check prerequisites, build the image, create the first instance |
+| `check` / `build` / `rebuild` | Check Docker, build the patched image (`rebuild` does the same) |
+| `create` / `create-multi` | Create one instance, or several with a name prefix and consecutive ports (fill in their `allowFrom` afterwards) |
+| `list` / `configure` / `delete [name]` | List instances, edit `allowFrom` / model / provider, delete an instance (offers to back up its config first) |
+| `start` / `stop` / `restart` / `logs` / `status` / `chat` `<name>` | Control one instance. `chat` opens a terminal chat with the agent |
+| `start-all` / `stop-all` / `restart-all` / `update-all` | The same for every instance. `update-all` recreates containers after a rebuild |
+| `login` / `reconnect` / `upgrade-bridge` / `configure-wa` `<name>` | WhatsApp: link with a QR code, re-link, refresh the bridge from the image (also re-links), edit settings |
+| `global-set` / `global-provider` / `global-model` / `global-key` / `global-show` / `global-clear` | Global LLM defaults (see below) |
+| `instance-show` / `instance-model` / `instance-provider` / `instance-key` `<name>` | Show or change one instance's LLM settings |
+| `instance-reset` / `instance-key-clear` `<name>` | Copy the global provider, model and key (or just the key) into an instance |
 
-### Creating a WhatsApp Agent
+## How it works
 
-```bash
-# 1. Create instance
-./xnanobot.sh create
-# Enter: name, select WhatsApp, choose provider, enter API key
-
-# 2. Login (scan QR code)
-./xnanobot.sh login wa1
-
-# 3. Start
-./xnanobot.sh start wa1
-
-# 4. Verify connection
-./xnanobot.sh status wa1
-```
-
-## 🏗️ Architecture
-
-### Project Structure
+### Layout
 
 ```
-~/aimanager/
-├── xnanobot.sh              # Main script (that's all you need)
-├── nanobot-instances/       # All your agents live here
-│   ├── wa1/
-│   │   ├── config.json      # Agent config (provider, API keys, channels)
-│   │   ├── docker-compose.yml
-│   │   ├── bridge/          # WhatsApp bridge (patched for audio)
-│   │   ├── workspace/       # Agent memory, sessions, files
-│   │   └── whatsapp-auth/   # WhatsApp session data
-│   └── wa2/                 # Each agent is independent
-├── nanobot-source/          # Nanobot source (auto-managed for builds)
-└── docs/
+agent-manager/
+├── xnanobot.sh            # entry point: sets paths, sources lib/ and scripts/, dispatches commands
+├── lib/                   # helpers: output, Docker, instances, channels, LLM config and menus
+├── scripts/               # flows: setup and build, instances, control, WhatsApp, interactive menu
+├── examples/              # a config.json and docker-compose.yml as `create` writes them
+├── docs/roadmap.md        # original refactoring and LLM-settings plan (historical)
+├── nanobot-source/        # created by `build`, ignored by git
+├── nanobot-instances/     # one directory per agent, ignored by git
+│   └── wa1/
+│       ├── config.json          # provider, API key, model, channel settings
+│       ├── docker-compose.yml   # this agent's container, port and mounts
+│       ├── workspace/           # nanobot's prompt files (AGENTS.md, SOUL.md, USER.md, …) and memory
+│       ├── bridge/              # WhatsApp only: Node.js bridge, copied from the image on first login
+│       └── whatsapp-auth/       # WhatsApp only: linked-device session
+└── backups/               # config copies made when an instance is deleted, ignored by git
 ```
 
-### Docker Isolation Model
+### Isolation
 
-Each agent runs in its own Docker container. What it can access is **strictly defined** by bind mounts in its `docker-compose.yml`:
+Each instance is its own Compose project, and its container only sees what its `docker-compose.yml` mounts:
 
 ```yaml
 volumes:
-  - ./config.json:/root/.nanobot/config.json    # This agent's config
-  - ./workspace:/root/.nanobot/workspace        # This agent's memory
-  - ./bridge:/root/.nanobot/bridge              # This agent's bridge
-  - ./whatsapp-auth:/root/.nanobot/whatsapp-auth  # This agent's session
+  - ./config.json:/root/.nanobot/config.json
+  - ./workspace:/root/.nanobot/workspace
+  - ./bridge:/root/.nanobot/bridge                 # WhatsApp only
+  - ./whatsapp-auth:/root/.nanobot/whatsapp-auth   # WhatsApp only
 ```
 
-**What this means:**
-- Agent `wa1` can **only** access `wa1`'s folders
-- Agent `wa2` can **only** access `wa2`'s folders
-- No agent can see, modify, or access another agent's data
-- No agent can access your host filesystem beyond what's explicitly mounted
-- Containers can't talk to each other unless you configure it
+One agent can't read another agent's config, memory or WhatsApp session, and none of them see the rest of the host filesystem. Because each instance is a separate Compose project, the containers are also on separate Docker networks.
 
-### How It Works
+For WhatsApp, the Node.js bridge and the Python gateway run in the same container:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          HOST                                   │
-│                                                                 │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │                   Container: wa1                           │ │
-│  │  ┌──────────────┐    WebSocket    ┌──────────────────┐    │ │
-│  │  │    Bridge    │◄───────────────►│     Gateway      │    │ │
-│  │  │   (Node.js)  │    port 3001    │    (Python)      │    │ │
-│  │  │              │                 │   port 18790     │    │ │
-│  │  └──────┬───────┘                 └────────┬─────────┘    │ │
-│  │         │                                  │              │ │
-│  │         ▼                                  ▼              │ │
-│  │   ┌──────────┐                    ┌──────────────┐        │ │
-│  │   │WhatsApp  │                    │  LLM API     │        │ │
-│  │   │  Cloud   │                    │ (OpenRouter) │        │ │
-│  │   └──────────┘                    └──────────────┘        │ │
-│  │                                                            │ │
-│  │   Volumes: ./config.json  ./workspace  ./bridge           │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                          ⬆️ separated ⬆️                         │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │                   Container: wa2                           │ │
-│  │   (Same structure, completely isolated)                    │ │
-│  │   Volumes: ./config.json  ./workspace  ./bridge           │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────── container nanobot-wa1 ────────────────────────┐
+│                                                                        │
+│   WhatsApp ◄──► Bridge (Node.js, Baileys) ◄─ ws :3001 ─► Gateway ◄──► LLM API
+│                                                     (Python, :18790)   │
+│                                                                        │
+│   mounts: config.json  workspace/  bridge/  whatsapp-auth/             │
+└────────────────────────────────────────────────────────────────────────┘
+        host port (e.g. 18791) → container port 18790
 ```
 
-## 🤖 Supported LLM Providers
+### Build
 
-| Provider | Default Model | Notes |
-|----------|---------------|-------|
-| **OpenRouter** | `moonshotai/kimi-k2.5` | Recommended - access to all models |
-| OpenAI | `gpt-4o` | Direct API access |
-| Anthropic | `claude-sonnet-4-6` | Native Claude API |
-| DeepSeek | `deepseek-chat` | Chinese AI models |
-| Groq | `llama-3.3-70b-versatile` | Fast inference |
-| Custom | User-defined | OpenAI-compatible endpoints |
+`build` clones nanobot into `nanobot-source/` and force-checks out the pinned commit, which also discards patches from earlier builds. It then applies the WhatsApp audio patch and runs `docker build -t nanobot .`. Recent upstream nanobot no longer has the bridge layout these scripts rely on, so the pin is required. Change `NANOBOT_PINNED_COMMIT` in `xnanobot.sh` only if you are ready to adapt the patch.
 
-### Provider Configuration
+## Configuration
 
-When creating an instance, you'll be prompted:
+### Instance config
+
+`nanobot-instances/<name>/config.json` is the only LLM and channel config a container reads ([example](examples/config.example.json)):
+
+```json
+{
+  "providers": { "openrouter": { "apiKey": "sk-or-v1-..." } },
+  "agents": {
+    "defaults": {
+      "model": "moonshotai/kimi-k2.5",
+      "provider": "openrouter",
+      "workspace": "/root/.nanobot/workspace"
+    }
+  },
+  "channels": {
+    "whatsapp": { "enabled": true, "allowFrom": ["+5511999999999"] }
+  }
+}
 ```
-Select LLM provider:
-  1) OpenRouter (recommended) - Global access to all models
-  2) OpenAI - Direct OpenAI API
-  3) Anthropic - Direct Claude API
-  4) DeepSeek - Chinese models
-  5) Groq - Fast inference
-  6) Custom (OpenAI-compatible) - Local/custom endpoints
+
+- `allowFrom` lists who may talk to the agent. An empty list denies everyone, and `["*"]` allows anyone who finds the number or bot. That lets anyone use your API credits, so prefer explicit IDs.
+- `groupPolicy` (WhatsApp) is `open` by default, which answers every group message from allowed senders. Set it to `mention` with `configure-wa` to answer only when mentioned.
+- Restart the instance after editing `config.json` by hand. The menus offer a restart after they change it.
+
+### Global LLM defaults
+
+`global-set` and the other `global-*` commands save a provider, model and API keys in `~/.nanobot/global-config.json` on the host. Containers never read this file. The defaults reach an instance only when you copy them in:
+
+- `instance-reset <name>` copies the global provider, model and that provider's key into the instance's `config.json`.
+- `instance-key-clear <name>` replaces the instance's key with the global one. If no global key is set, it asks before leaving the instance without a key.
+
+### Script settings
+
+At the top of `xnanobot.sh`:
+
+```bash
+PATCH_WHATSAPP_AUDIO=true          # apply the voice-message patch during build
+NANOBOT_PINNED_COMMIT="63d646f"    # upstream nanobot commit to build
 ```
 
-## 📱 WhatsApp Audio Support
+## Supported LLM providers
 
-This fork includes a patched bridge that automatically downloads voice messages:
+Model lists are as of March 2026. You can always type any model name with "Other model".
+
+| Provider | Default model |
+|---|---|
+| OpenRouter | `moonshotai/kimi-k2.5` |
+| OpenAI | `gpt-4o` |
+| Anthropic | `claude-sonnet-4-6` |
+| DeepSeek | `deepseek-chat` |
+| Groq | `llama-3.3-70b-versatile` |
+| Custom (OpenAI-compatible) | your endpoint's model; stored as `providers.openai` with an `apiBase` |
+
+## WhatsApp voice messages
+
+The patch adds an `audioMessage` branch to the bridge's media handling, so voice notes are saved and passed to the agent like other media:
 
 ```typescript
-// Patch adds audio message handling in whatsapp.ts
 } else if (unwrapped.audioMessage) {
   fallbackContent = '[Voice Message]';
   const audioMime = unwrapped.audioMessage.mimetype ?? 'audio/ogg; codecs=opus';
@@ -333,98 +198,31 @@ This fork includes a patched bridge that automatically downloads voice messages:
 }
 ```
 
-The patch is applied automatically during `./xnanobot.sh build` or `./xnanobot.sh rebuild`.
+Transcribing the audio is up to the agent and its tools.
 
-**Disable patch**: Edit `xnanobot.sh` and set:
+## Known limitations
+
+- **API keys are stored in plain text** in each `config.json` and in `~/.nanobot/global-config.json`. `nanobot-instances/` and `backups/` are git-ignored for this reason.
+- **Containers run as root** (the upstream image's default).
+- **Linux, or macOS with Bash 4+.** The scripts use Bash 4 features (associative arrays) and an interactive `docker run -it` for the WhatsApp login.
+- **No automated tests.** The final cleanup was checked with `bash -n` and by running the config, build and menu functions against throwaway directories with Docker stubbed out. It was not re-run end to end with Docker.
+- **Upstream is pinned** to a March 2026 commit, so newer nanobot features aren't available.
+
+## Troubleshooting
+
 ```bash
-PATCH_WHATSAPP_AUDIO=false
+./xnanobot.sh logs wa1             # container logs (starts the instance if it isn't running)
+./xnanobot.sh status wa1           # nanobot's own status command
+./xnanobot.sh reconnect wa1        # WhatsApp disconnected: clear the session and scan again
+./xnanobot.sh upgrade-bridge wa1   # bridge errors after a rebuild: copy the bridge from the new image and re-link
 ```
 
-## 🔧 Configuration
+If a container won't start, check `docker compose logs` in `nanobot-instances/<name>/`.
 
-### Script Variables (xnanobot.sh)
+## Background
 
-```bash
-# Toggle WhatsApp audio patch
-PATCH_WHATSAPP_AUDIO=true
+This started as a single ~2,400-line script for running nanobot agents on WhatsApp. It was later split into `lib/` and `scripts/` and gained per-instance LLM settings, as described in [docs/roadmap.md](docs/roadmap.md).
 
-# These are auto-detected:
-AIMANAGER_DIR="$(cd "$(dirname "$0")" && pwd)"
-NANOBOT_INSTANCES="${AIMANAGER_DIR}/nanobot-instances"
-NANOBOT_SOURCE_DIR="${AIMANAGER_DIR}/nanobot-source"
-BACKUP_DIR="${AIMANAGER_DIR}/backups"
-```
+## License
 
-### Instance Config (config.json)
-
-Each instance has its own `config.json`:
-```json
-{
-  "providers": {
-    "openrouter": {
-      "apiKey": "sk-or-v1-..."
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": "moonshotai/kimi-k2.5",
-      "provider": "openrouter",
-      "workspace": "/root/.nanobot/workspace"
-    }
-  },
-  "channels": {
-    "whatsapp": {
-      "enabled": true,
-      "allowFrom": ["*"],
-      "groupPolicy": "mention"
-    }
-  }
-}
-```
-
-## 📁 Git Structure
-
-```
-Repository includes:
-├── xnanobot.sh          # Main script (version controlled)
-├── docs/                # Documentation
-└── .gitignore           # Excludes:
-                         # - nanobot-source/
-                         # - nanobot-instances/*/whatsapp-auth/
-                         # - nanobot-instances/*/bridge/node_modules/
-                         # - Any .env or API keys
-```
-
-**Note**: Instance configs and workspace files ARE tracked in git. API keys in configs should be managed carefully (consider using `.env` files).
-
-## 🐛 Troubleshooting
-
-### Container won't start
-```bash
-docker compose -f ~/aimanager/nanobot-instances/wa1/docker-compose.yml logs
-```
-
-### WhatsApp not connecting
-```bash
-./xnanobot.sh reconnect wa1
-```
-
-### Bridge issues
-```bash
-./xnanobot.sh upgrade-bridge wa1
-```
-
-### Complete reset
-```bash
-./xnanobot.sh delete wa1
-./xnanobot.sh create
-```
-
-## 📝 License
-
-MIT
-
-## 🔗 Links
-
-- [Nanobot GitHub](https://github.com/HKUDS/nanobot)
-- [Nanobot Documentation](https://docs.nanobot.ai)
+[MIT](LICENSE). nanobot itself is a separate project by [HKUDS](https://github.com/HKUDS/nanobot) under its own license.
