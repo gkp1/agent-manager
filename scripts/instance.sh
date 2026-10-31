@@ -146,11 +146,11 @@ create_docker_compose() {
     local channel="$4"
     
     if [[ "$channel" == "whatsapp" ]]; then
-        cat > "${dir}/docker-compose.yml" << 'EOF'
+        cat > "${dir}/docker-compose.yml" << EOF
 services:
   nanobot:
     image: nanobot
-    container_name: nanobot-{NAME}
+    container_name: nanobot-${name}
     restart: unless-stopped
     volumes:
       - ./config.json:/root/.nanobot/config.json
@@ -158,14 +158,13 @@ services:
       - ./workspace:/root/.nanobot/workspace
       - ./whatsapp-auth:/root/.nanobot/whatsapp-auth
     ports:
-      - "{PORT}:18790"
+      - "${port}:18790"
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
         cd /root/.nanobot/bridge && node dist/index.js &
         exec nanobot gateway
 EOF
-        sed -i "s/{NAME}/$name/g; s/{PORT}/$port/g" "${dir}/docker-compose.yml"
     else
         cat > "${dir}/docker-compose.yml" << EOF
 services:
